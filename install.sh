@@ -9,18 +9,18 @@
 
 # Adjust the paths to match your system (do not end the path with /).
 # Path to local (working) projects folder
-local_path="${HOME}/LocalDocs/Projects"
+local_path="${HOME}/github"
 
 # Path to cloud projects folder (node_modules, etc. are omitted).
 #
 # Note: if you're using iCloud on a system before Sierra, the Documents folder
 # can be found at "${HOME}/Library/Mobile Documents/com~apple~CloudDocs"
-cloud_path="${HOME}/Documents/Projects"
+cloud_path="${HOME}/Documents/github"
 
 # Comma-separated list of files to ignore.
 # Example: "node_modules,*.log" -> ignore all paths containing `node_modules` and any files ending with `*.log`.
 # For more details see: http://www.cis.upenn.edu/~bcpierce/unison/download/releases/stable/unison-manual.html#ignore
-ignore_files="node_modules,bower_components,*.log,.DS_Store"
+ignore_files="node_modules,bower_components,*.log,.DS_Store,.Spotlight-V100,.Trashes,.fseventsd,build,dist,.vscode,.idea,tmp,temp,var,.cache,cache,vendor,.nuxt,.nuxt_webpack,.next"
 
 # If you want, change log destination here (irellevant with --no-logs flag).
 log_file="/var/log/${label}.out.log"
