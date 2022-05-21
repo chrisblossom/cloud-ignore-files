@@ -15,7 +15,7 @@ local_path="${HOME}/github"
 #
 # Note: if you're using iCloud on a system before Sierra, the Documents folder
 # can be found at "${HOME}/Library/Mobile Documents/com~apple~CloudDocs"
-cloud_path="${HOME}/Documents/github"
+cloud_path="${HOME}/Dropbox/github-mirror"
 
 # Comma-separated list of files to ignore.
 # Example: "node_modules,*.log" -> ignore all paths containing `node_modules` and any files ending with `*.log`.
