@@ -35,6 +35,16 @@ label="com.markogresak.projects.CloudSyncIgnore"
 script_path="${HOMEBREW_PREFIX}/bin/${label}.sh"
 plist_path="${HOME}/Library/LaunchAgents/${label}.plist"
 
+echo "** SYNC INFORMATION **"
+echo "local_path: $local_path"
+echo "cloud_path: $cloud_path"
+echo "ignore_files: $ignore_files"
+echo "log_file: $log_file"
+echo "error.log: $err_file"
+echo "script_path: $script_path"
+echo "plist_path: $plist_path"
+echo -e "**********************\n"
+
 # If config already exists, unload it before updating it.
 if [ -f "$plist_path" ]; then
   launchctl unload "$plist_path"
