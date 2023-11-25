@@ -36,15 +36,15 @@ script_path="/usr/local/bin/${label}.sh"
 plist_path="${HOME}/Library/LaunchAgents/${label}.plist"
 
 # If config already exists, unload it before updating it.
-if [ -f $plist_path ]; then
-  launchctl unload $plist_path
+if [ -f "$plist_path" ]; then
+  launchctl unload "$plist_path"
 fi
 
 if [[ "$1" == "--uninstall" || "$1" == "--remove" ]]; then
-  rm -f $script_path $plist_path
-  if [ -f $log_file ] || [ -f $err_file ]; then
+  rm -f "$script_path" "$plist_path"
+  if [ -f "$log_file" ] || [ -f "$err_file" ]; then
     echo "The script will attempt to remove log files. This requires sudo access, so the shell will ask you for password."
-    sudo rm -f $log_file $err_file
+    sudo rm -f "$log_file" "$err_file"
   fi
   echo "Sync script successfully removed. Thanks for giving it a chance. If you have any suggestions for improvement, please let me know by submitting an issue."
   exit
@@ -66,7 +66,7 @@ else
   # Create/clear log files (requires sudo to allow modifying files in /var/log) and fix log file permissions.
   sudo sh -c 'echo "" > $0' "$log_file"
   sudo sh -c 'echo "" > $0' "$err_file"
-  sudo chown `whoami` "$log_file" "$err_file"
+  sudo chown "$(whoami)" "$log_file" "$err_file"
   echo -e "Log files were successfully created.\n"
 fi
 
@@ -76,14 +76,14 @@ sed "s|{{LOCAL_PATH}}|${local_path}|;
      s|{{SCRIPT_PATH}}|${script_path}|;
      s|{{LABEL}}|${label}|;
      s|{{LOG_FILE}}|${log_file}|;
-     s|{{ERR_FILE}}|${err_file}|" plist.template > $plist_path
+     s|{{ERR_FILE}}|${err_file}|" plist.template > "$plist_path"
 sed "s|{{UNISON_PATH}}|$(which unison)|;
      s|{{IGNORE_FILES}}|${ignore_files}|;
      s|{{LOCAL_PATH}}|${local_path}|;
-     s|{{CLOUD_PATH}}|${cloud_path}|;" script.template > $script_path
+     s|{{CLOUD_PATH}}|${cloud_path}|;" script.template > "$script_path"
 
 # Load launchd config.
-launchctl load $plist_path
+launchctl load "$plist_path"
 
 echo "Sync script added. It will be triggered any time any of files inside local or iCloud project folder changes."
 echo "I hope this script will help make your life a little easier :)"
