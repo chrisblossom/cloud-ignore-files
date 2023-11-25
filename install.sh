@@ -22,10 +22,6 @@ cloud_path="${HOME}/Dropbox/github-mirror"
 # For more details see: http://www.cis.upenn.edu/~bcpierce/unison/download/releases/stable/unison-manual.html#ignore
 ignore_files="node_modules,bower_components,*.log,.DS_Store,.Spotlight-V100,.Trashes,.fseventsd,build,dist,.vscode,.idea,tmp,temp,var,.cache,cache,vendor,.nuxt,.nuxt_webpack,.next"
 
-# If you want, change log destination here (irellevant with --no-logs flag).
-log_file="/var/log/${label}.out.log"
-err_file="/var/log/${label}.err.log"
-
 ##########################################################################
 # No need to modify the code below, unless you know what you're doing :D #
 ##########################################################################
@@ -34,13 +30,16 @@ err_file="/var/log/${label}.err.log"
 label="com.markogresak.projects.CloudSyncIgnore"
 script_path="${HOMEBREW_PREFIX}/bin/${label}.sh"
 plist_path="${HOME}/Library/LaunchAgents/${label}.plist"
+log_prefix="${HOME}/.unison.cloudsyncignore"
+output_log="${log_prefix}.output.log"
+error_log="${log_prefix}.error.log"
 
 echo "** SYNC INFORMATION **"
 echo "local_path: $local_path"
 echo "cloud_path: $cloud_path"
 echo "ignore_files: $ignore_files"
-echo "log_file: $log_file"
-echo "error.log: $err_file"
+echo "output_log: $output_log"
+echo "error_log: $error_log"
 echo "script_path: $script_path"
 echo "plist_path: $plist_path"
 echo -e "**********************\n"
@@ -53,16 +52,23 @@ fi
 
 # If config already exists, unload it before updating it.
 if [ -f "$plist_path" ]; then
+  echo "Unloading $plist_path"
   launchctl unload "$plist_path"
 fi
 
 if [[ "$1" == "--uninstall" ]]; then
-  rm -f "$script_path" "$plist_path"
-  if [ -f "$log_file" ] || [ -f "$err_file" ]; then
-    echo "The script will attempt to remove log files. This requires sudo access, so the shell will ask you for password."
-    sudo rm -f "$log_file" "$err_file"
-  fi
-  echo "Sync script successfully removed. Thanks for giving it a chance. If you have any suggestions for improvement, please let me know by submitting an issue."
+  echo "Removing $script_path"
+  rm -f "$script_path"
+  echo "Removing and $plist_path"
+  rm -f "$plist_path"
+
+  echo "Removing $output_log"
+  rm -f "$output_log"
+  echo "Removing $error_log"
+  rm -f "$error_log"
+
+  echo ""
+  echo "Sync script successfully removed. If you have any suggestions for improvement, please submit an issue on github."
   exit
 fi
 
@@ -78,26 +84,28 @@ if ! command -v unison >/dev/null 2>&1; then
 fi
 
 # Create/clear log files and fix log file permissions.
-echo "The script will attempt to create log files. This requires sudo access, so the shell will ask you for password."
-sudo sh -c 'echo "" > $0' "$log_file"
-sudo sh -c 'echo "" > $0' "$err_file"
-sudo chown "$(whoami)" "$log_file" "$err_file"
-echo -e "Log files were successfully created.\n"
+echo "(re)creating log files."
+sh -c 'echo "" > $0' "$output_log"
+sh -c 'echo "" > $0' "$error_log"
 
 # Create actual files based of .template files.
+echo "Creating $plist_path"
 sed "s|{{LOCAL_PATH}}|${local_path}|;
      s|{{CLOUD_PATH}}|${cloud_path}|;
      s|{{SCRIPT_PATH}}|${script_path}|;
      s|{{LABEL}}|${label}|;
-     s|{{LOG_FILE}}|${log_file}|;
-     s|{{ERR_FILE}}|${err_file}|" plist.template > "$plist_path"
+     s|{{LOG_FILE}}|${output_log}|;
+     s|{{ERR_FILE}}|${error_log}|" plist.template > "$plist_path"
+
+echo "Creating $script_path"
 sed "s|{{UNISON_PATH}}|$(which unison)|;
      s|{{IGNORE_FILES}}|${ignore_files}|;
      s|{{LOCAL_PATH}}|${local_path}|;
      s|{{CLOUD_PATH}}|${cloud_path}|;" script.template > "$script_path"
 
 # Load launchd config.
+echo "Loading $plist_path"
 launchctl load "$plist_path"
 
-echo "Sync script added. It will be triggered any time any of files inside local or iCloud project folder changes."
-echo "I hope this script will help make your life a little easier :)"
+echo ""
+echo "Sync script added. It will be triggered any time any of files inside local or cloud project folder changes."
