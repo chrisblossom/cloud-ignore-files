@@ -5,7 +5,7 @@
 # Usage:
 #  - Call script to register sync script with launchd.
 #  - Call with `--no-logs` to disable logging.
-#  - Call with `--uninstall` or `--remove` to unregister from launchd and clean up files.
+#  - Call with `--uninstall` to unregister from launchd and clean up files.
 
 # Adjust the paths to match your system (do not end the path with /).
 # Path to local (working) projects folder
@@ -50,7 +50,7 @@ if [ -f "$plist_path" ]; then
   launchctl unload "$plist_path"
 fi
 
-if [[ "$1" == "--uninstall" || "$1" == "--remove" ]]; then
+if [[ "$1" == "--uninstall" ]]; then
   rm -f "$script_path" "$plist_path"
   if [ -f "$log_file" ] || [ -f "$err_file" ]; then
     echo "The script will attempt to remove log files. This requires sudo access, so the shell will ask you for password."
