@@ -32,7 +32,7 @@ err_file="/var/log/${label}.err.log"
 
 # Path to script and launchd config.
 label="com.markogresak.projects.CloudSyncIgnore"
-script_path="/usr/local/bin/${label}.sh"
+script_path="${HOMEBREW_PREFIX}/bin/${label}.sh"
 plist_path="${HOME}/Library/LaunchAgents/${label}.plist"
 
 # If config already exists, unload it before updating it.
@@ -48,6 +48,11 @@ if [[ "$1" == "--uninstall" || "$1" == "--remove" ]]; then
   fi
   echo "Sync script successfully removed. Thanks for giving it a chance. If you have any suggestions for improvement, please let me know by submitting an issue."
   exit
+fi
+
+if [[ -z "$HOMEBREW_PREFIX" ]]; then
+  echo "Homebrew is not installed. Install it (https://brew.sh) and try this script again."
+  exit 1
 fi
 
 # Check for unison command and fail if not found.
