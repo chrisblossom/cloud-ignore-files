@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 #
 # v1.0.0
 #
@@ -27,12 +27,12 @@ ignore_files="node_modules,bower_components,*.log,.DS_Store,.Spotlight-V100,.Tra
 ##########################################################################
 
 # Path to script and launchd config.
-label="com.markogresak.projects.CloudSyncIgnore"
-script_path="${HOMEBREW_PREFIX}/bin/${label}.sh"
+base_path="${HOME}/.unison"
+label="com.chrisblossom.projects.CloudSyncIgnore"
+script_path="${base_path}/bin/unison-cloud-sync-ignore"
 plist_path="${HOME}/Library/LaunchAgents/${label}.plist"
-log_prefix="${HOME}/.unison.cloudsyncignore"
-output_log="${log_prefix}.output.log"
-error_log="${log_prefix}.error.log"
+output_log="${base_path}/cloudsyncignore.output.log"
+error_log="${base_path}/cloudsyncignore.error.log"
 
 echo "** SYNC INFORMATION **"
 echo "local_path: $local_path"
@@ -59,13 +59,18 @@ fi
 if [[ "$1" == "--uninstall" ]]; then
   echo "Removing $script_path"
   rm -f "$script_path"
-  echo "Removing and $plist_path"
+  echo "Removing $plist_path"
   rm -f "$plist_path"
 
   echo "Removing $output_log"
   rm -f "$output_log"
   echo "Removing $error_log"
   rm -f "$error_log"
+
+  echo "Removing $base_path/bin/ if the directory is empty"
+  rmdir "$base_path/bin" 2>/dev/null
+  echo "Removing $base_path/ if the directory is empty"
+  rmdir "$base_path" 2>/dev/null
 
   echo ""
   echo "Sync script successfully removed. If you have any suggestions for improvement, please submit an issue on github."
@@ -82,6 +87,9 @@ if ! command -v unison >/dev/null 2>&1; then
   echo "Command 'unison' not found. Install it (brew install unison) and try this script again."
   exit 1
 fi
+
+echo "creating directory $base_path/bin/"
+mkdir -p "$base_path/bin"
 
 # Create/clear log files and fix log file permissions.
 echo "(re)creating log files."
@@ -102,6 +110,7 @@ sed "s|{{UNISON_PATH}}|$(which unison)|;
      s|{{IGNORE_FILES}}|${ignore_files}|;
      s|{{LOCAL_PATH}}|${local_path}|;
      s|{{CLOUD_PATH}}|${cloud_path}|;" script.template > "$script_path"
+chmod +x "$script_path"
 
 # Load launchd config.
 echo "Loading $plist_path"
