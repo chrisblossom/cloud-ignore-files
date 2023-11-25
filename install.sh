@@ -50,6 +50,12 @@ if [[ ("$1" != "--install" && "$1" != "--update" && "$1" != "--uninstall") || -n
   exit 1
 fi
 
+# do not allow running as root
+if [[ $EUID -eq 0 ]]; then
+   echo "ERROR: $0 cannot be ran using sudo or as the root user. Manually remove files listed above and try again."
+   exit 1
+fi
+
 # If config already exists, unload it before updating it.
 if [ -f "$plist_path" ]; then
   echo "Unloading $plist_path"
