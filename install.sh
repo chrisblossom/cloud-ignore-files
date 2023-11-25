@@ -4,7 +4,7 @@
 #
 # Usage:
 #  - Call script to register sync script with launchd.
-#  - Call with `--no-logs` to disable logging.
+#  - Call with `--install` to install/update sync.
 #  - Call with `--uninstall` to unregister from launchd and clean up files.
 
 # Adjust the paths to match your system (do not end the path with /).
@@ -44,6 +44,12 @@ echo "error.log: $err_file"
 echo "script_path: $script_path"
 echo "plist_path: $plist_path"
 echo -e "**********************\n"
+
+# Check if script is called with correct arguments.
+if [[ ("$1" != "--install" && "$1" != "--uninstall") || -n "$2" ]] || [[ -z "$1" ]]; then
+  echo "Usage: $0 [--install] [--uninstall]"
+  exit 1
+fi
 
 # If config already exists, unload it before updating it.
 if [ -f "$plist_path" ]; then
