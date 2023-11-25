@@ -77,19 +77,12 @@ if ! command -v unison >/dev/null 2>&1; then
   exit 1
 fi
 
-# If `--no-logs` flag is used, use /dev/null as stdout and stderr.
-if [[ "$1" == "--no-logs" ]]; then
-  log_file="/dev/null"
-  err_file="/dev/null"
-else
-  echo "The script will attempt to create log files. This requires sudo access, so the shell will ask you for password."
-
-  # Create/clear log files (requires sudo to allow modifying files in /var/log) and fix log file permissions.
-  sudo sh -c 'echo "" > $0' "$log_file"
-  sudo sh -c 'echo "" > $0' "$err_file"
-  sudo chown "$(whoami)" "$log_file" "$err_file"
-  echo -e "Log files were successfully created.\n"
-fi
+# Create/clear log files and fix log file permissions.
+echo "The script will attempt to create log files. This requires sudo access, so the shell will ask you for password."
+sudo sh -c 'echo "" > $0' "$log_file"
+sudo sh -c 'echo "" > $0' "$err_file"
+sudo chown "$(whoami)" "$log_file" "$err_file"
+echo -e "Log files were successfully created.\n"
 
 # Create actual files based of .template files.
 sed "s|{{LOCAL_PATH}}|${local_path}|;
