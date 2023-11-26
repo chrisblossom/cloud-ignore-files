@@ -31,15 +31,17 @@ base_path="${HOME}/.unison"
 label="com.chrisblossom.projects.CloudSyncIgnore"
 script_path="${base_path}/bin/unison-cloud-sync-ignore"
 plist_path="${HOME}/Library/LaunchAgents/${label}.plist"
-output_log="${base_path}/cloudsyncignore.output.log"
-error_log="${base_path}/cloudsyncignore.error.log"
+log_file="${base_path}/cloudsyncignore.unison.log"
+stdout_log="${base_path}/cloudsyncignore.stdout.log"
+stderr_log="${base_path}/cloudsyncignore.stderr.log"
 
 echo "** SYNC INFORMATION **"
 echo "local_path: $local_path"
 echo "cloud_path: $cloud_path"
 echo "ignore_files: $ignore_files"
-echo "output_log: $output_log"
-echo "error_log: $error_log"
+echo "log_file: $log_file"
+echo "stdout_log: $stdout_log"
+echo "stderr_log: $stderr_log"
 echo "script_path: $script_path"
 echo "plist_path: $plist_path"
 echo -e "**********************\n"
@@ -68,10 +70,10 @@ if [[ "$1" == "--uninstall" ]]; then
   echo "Removing $plist_path"
   rm -f "$plist_path"
 
-  echo "Removing $output_log"
-  rm -f "$output_log"
-  echo "Removing $error_log"
-  rm -f "$error_log"
+  echo "Removing $stdout_log"
+  rm -f "$stdout_log"
+  echo "Removing $stderr_log"
+  rm -f "$stderr_log"
 
   echo "Removing $base_path/bin/ if the directory is empty"
   rmdir "$base_path/bin" 2>/dev/null
@@ -99,8 +101,8 @@ mkdir -p "$base_path/bin"
 
 # Create/clear log files and fix log file permissions.
 echo "(re)creating log files."
-sh -c 'echo "" > $0' "$output_log"
-sh -c 'echo "" > $0' "$error_log"
+sh -c 'echo "" > $0' "$stdout_log"
+sh -c 'echo "" > $0' "$stderr_log"
 
 # Create actual files based of .template files.
 echo "Creating $plist_path"
@@ -108,11 +110,12 @@ sed "s|{{LOCAL_PATH}}|${local_path}|;
      s|{{CLOUD_PATH}}|${cloud_path}|;
      s|{{SCRIPT_PATH}}|${script_path}|;
      s|{{LABEL}}|${label}|;
-     s|{{LOG_FILE}}|${output_log}|;
-     s|{{ERR_FILE}}|${error_log}|" plist.template > "$plist_path"
+     s|{{LOG_FILE}}|${stdout_log}|;
+     s|{{ERR_FILE}}|${stderr_log}|" plist.template > "$plist_path"
 
 echo "Creating $script_path"
 sed "s|{{UNISON_PATH}}|$(which unison)|;
+     s|{{LOG_FILE}}|${log_file}|;
      s|{{IGNORE_FILES}}|${ignore_files}|;
      s|{{LOCAL_PATH}}|${local_path}|;
      s|{{CLOUD_PATH}}|${cloud_path}|;" script.template > "$script_path"
