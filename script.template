@@ -1,3 +1,4 @@
 #!/usr/bin/env bash
 
-{{UNISON_PATH}} -batch -logfile={{LOG_FILE}} -ignore="Name {{{IGNORE_FILES}}}" "{{LOCAL_PATH}}" "{{CLOUD_PATH}}"
+# -perms 0o111: only set executable bit on copied files
+{{UNISON_PATH}} -batch -perms 0o111 -copyonconflict -prefer=newer -times -ignorecase=false -links=true -logfile={{LOG_FILE}} -ignore="Name {{{IGNORE_FILES}}}" "{{LOCAL_PATH}}" "{{CLOUD_PATH}}"
