@@ -34,9 +34,10 @@ If using iCloud: Due to stricter macOS security policy, you must ensure `/bin/ba
 _Thanks to @chrisblossom for pointing it out (see [#5](https://github.com/markogresak/cloud-ignore-files/issues/5#issuecomment-771240855))._
 
 1. Install [unison](https://github.com/bcpierce00/unison) CLI tool. The easiest way is `brew install unison`.
-2. Clone or download this repository and `cd` into the folder.
-3. Check `cloud-ignore-files.sh` script and edit paths to match your system setup. Check variables `local_path`, `cloud_path` and `ignore_files`, which can be found at the top of the script.
-4. Run `./cloud-ignore-files.sh --install`.
+2. Install [unison-fsmonitor](https://github.com/autozimu/unison-fsmonitor). 
+3. Clone or download this repository and `cd` into the folder.
+4. Check `cloud-ignore-files.sh` script and edit paths to match your system setup. Check variables `local_path`, `cloud_path` and `ignore_files`, which can be found at the top of the script.
+5. Run `./cloud-ignore-files.sh --install`.
 
 The script is configured to add log files in `~/.unison/`. 
 
