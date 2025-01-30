@@ -20,7 +20,7 @@ cloud_path="${HOME}/Dropbox/github-mirror"
 # Comma-separated list of files to ignore.
 # Example: "node_modules,*.log" -> ignore all paths containing `node_modules` and any files ending with `*.log`.
 # For more details see: http://www.cis.upenn.edu/~bcpierce/unison/download/releases/stable/unison-manual.html#ignore
-ignore_files="node_modules,bower_components,*.log,.DS_Store,.Spotlight-V100,.DocumentRevisions-V100,.TemporaryItems,.Trashes,.fseventsd,build,dist,.vscode,.idea,tmp,temp,var,.cache,cache,vendor,.nuxt,.nuxt_webpack,.next"
+ignore_files="target,node_modules,bower_components,*.log,.DS_Store,.Spotlight-V100,.DocumentRevisions-V100,.TemporaryItems,.Trashes,.fseventsd,build,dist,.vscode,.idea,tmp,temp,var,.cache,cache,vendor,.nuxt,.nuxt_webpack,.next"
 
 ##########################################################################
 # No need to modify the code below, unless you know what you're doing :D #
