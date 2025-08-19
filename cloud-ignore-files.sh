@@ -56,6 +56,10 @@ ignore_files=(
   ".nuxt"
   ".nuxt_webpack"
   ".next"
+
+  # Python
+  "__pycache__"
+  "venv*"
 )
 
 # Join ignore files into a comma-separated string for Unison's Name {a,b,c} syntax
