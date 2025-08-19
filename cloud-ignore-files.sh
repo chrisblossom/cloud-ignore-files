@@ -42,7 +42,6 @@ ignore_files=(
   ".fseventsd"
   
   # IDE
-  ".claude/statsig"
   ".vscode"
   ".idea"
   ".cursorrules"
