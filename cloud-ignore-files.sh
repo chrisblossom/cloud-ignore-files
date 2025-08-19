@@ -21,7 +21,6 @@ cloud_path="${HOME}/Dropbox/github-mirror"
 # Example: adding a line "*.log" will ignore any files ending with `*.log`.
 # For more details see: http://www.cis.upenn.edu/~bcpierce/unison/download/releases/stable/unison-manual.html#ignore
 ignore_files=(
-
   # General
   "*.log"
   "build"
@@ -41,6 +40,12 @@ ignore_files=(
   ".TemporaryItems"
   ".Trashes"
   ".fseventsd"
+  
+  # IDE
+  ".claude/statsig"
+  ".vscode"
+  ".idea"
+  ".cursorrules"
 
   # Rust
   "target"
@@ -51,12 +56,6 @@ ignore_files=(
   ".nuxt"
   ".nuxt_webpack"
   ".next"
-  
-  # IDE
-  ".claude/statsig"
-  ".vscode"
-  ".idea"
-  ".cursorrules"
 )
 
 # Join ignore files into a comma-separated string for Unison's Name {a,b,c} syntax
