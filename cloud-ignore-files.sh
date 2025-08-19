@@ -17,10 +17,39 @@ local_path="${HOME}/github"
 # can be found at "${HOME}/Library/Mobile Documents/com~apple~CloudDocs"
 cloud_path="${HOME}/Dropbox/github-mirror"
 
-# Comma-separated list of files to ignore.
-# Example: "node_modules,*.log" -> ignore all paths containing `node_modules` and any files ending with `*.log`.
+# List of files/patterns to ignore (one per line). These will be joined with commas for Unison.
+# Example: adding a line "*.log" will ignore any files ending with `*.log`.
 # For more details see: http://www.cis.upenn.edu/~bcpierce/unison/download/releases/stable/unison-manual.html#ignore
-ignore_files="target,node_modules,bower_components,*.log,.DS_Store,.Spotlight-V100,.DocumentRevisions-V100,.TemporaryItems,.Trashes,.fseventsd,build,dist,.vscode,.idea,tmp,temp,var,.cache,cache,vendor,.nuxt,.nuxt_webpack,.next,*.tmp.*"
+ignore_files=(
+  "target"
+  "node_modules"
+  "bower_components"
+  "*.log"
+  ".DS_Store"
+  ".Spotlight-V100"
+  ".DocumentRevisions-V100"
+  ".TemporaryItems"
+  ".Trashes"
+  ".fseventsd"
+  "build"
+  "dist"
+  ".vscode"
+  ".idea"
+  ".cursorrules"
+  "tmp"
+  "temp"
+  "var"
+  ".cache"
+  "cache"
+  "vendor"
+  ".nuxt"
+  ".nuxt_webpack"
+  ".next"
+  "*.tmp.*"
+)
+
+# Join ignore files into a comma-separated string for Unison's Name {a,b,c} syntax
+ignore_files_joined="$(IFS=,; printf '%s' "${ignore_files[*]}")"
 
 ##########################################################################
 # No need to modify the code below, unless you know what you're doing :D #
@@ -38,7 +67,7 @@ stderr_log="${base_path}/cloudsyncignore.stderr.log"
 echo "** SYNC INFORMATION **"
 echo "local_path: $local_path"
 echo "cloud_path: $cloud_path"
-echo "ignore_files: $ignore_files"
+echo "ignore_files: ${ignore_files_joined}"
 echo "log_file: $log_file"
 echo "stdout_log: $stdout_log"
 echo "stderr_log: $stderr_log"
@@ -116,7 +145,7 @@ sed "s|{{LOCAL_PATH}}|${local_path}|;
 echo "Creating $script_path"
 sed "s|{{UNISON_PATH}}|$(which unison)|;
      s|{{LOG_FILE}}|${log_file}|;
-     s|{{IGNORE_FILES}}|${ignore_files}|;
+     s|{{IGNORE_FILES}}|${ignore_files_joined}|;
      s|{{LOCAL_PATH}}|${local_path}|;
      s|{{CLOUD_PATH}}|${cloud_path}|;" script.template > "$script_path"
 chmod +x "$script_path"
