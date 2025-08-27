@@ -9,5 +9,5 @@ if [[ "$USER" != "$INSTALLED_USER" ]]; then
     exit 1
 fi
 
-# Watch mode sync using configured unison flags
-{{UNISON_PATH}} -repeat=watch {{UNISON_FLAGS}} -logfile={{LOG_FILE}} -ignore="Name {{{IGNORE_FILES}}}" "{{LOCAL_PATH}}" "{{CLOUD_PATH}}"
+# One-off sync using configured unison flags  
+{{UNISON_PATH}} {{UNISON_FLAGS}} -logfile={{LOG_FILE}} -ignore="Name {{{IGNORE_FILES}}}" "{{LOCAL_PATH}}" "{{CLOUD_PATH}}"

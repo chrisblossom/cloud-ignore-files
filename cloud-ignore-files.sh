@@ -61,8 +61,22 @@ ignore_files=(
   "venv*"
 )
 
+# Unison flags (one per line for clarity and maintainability)
+unison_flags=(
+  "-batch"              # Non-interactive mode
+  "-perms=0o111"        # Only set executable bit on copied files
+  "-copyonconflict"     # Keep both versions on conflict
+  "-prefer=newer"       # Prefer newer file on conflict
+  "-times"              # Sync modification times
+  "-ignorecase=false"   # Case-sensitive matching
+  "-links=true"         # Follow symbolic links
+)
+
 # Join ignore files into a comma-separated string for Unison's Name {a,b,c} syntax
 ignore_files_joined="$(IFS=,; printf '%s' "${ignore_files[*]}")"
+
+# Join unison flags into a space-separated string for command line
+unison_flags_joined="${unison_flags[*]}"
 
 ##########################################################################
 # No need to modify the code below, unless you know what you're doing :D #
@@ -71,7 +85,12 @@ ignore_files_joined="$(IFS=,; printf '%s' "${ignore_files[*]}")"
 # Path to script and launchd config.
 base_path="${HOME}/.unison"
 label="com.chrisblossom.projects.CloudSyncIgnore"
+
+# Get brew exec directory (changes based on OS/architecture: Intel vs Apple Silicon)
+brew_exec_dir="$(dirname "$(command -v brew)")"
+
 script_path="${base_path}/bin/unison-cloud-sync-ignore"
+sync_once_path="${brew_exec_dir}/sync-mirror"
 plist_path="${HOME}/Library/LaunchAgents/${label}.plist"
 log_file="${base_path}/cloudsyncignore.unison.log"
 stdout_log="${base_path}/cloudsyncignore.stdout.log"
@@ -81,10 +100,12 @@ echo "** SYNC INFORMATION **"
 echo "local_path: $local_path"
 echo "cloud_path: $cloud_path"
 echo "ignore_files: ${ignore_files_joined}"
+echo "unison_flags: ${unison_flags_joined}"
 echo "log_file: $log_file"
 echo "stdout_log: $stdout_log"
 echo "stderr_log: $stderr_log"
 echo "script_path: $script_path"
+echo "sync_once_path: $sync_once_path (in PATH)"
 echo "plist_path: $plist_path"
 echo -e "**********************\n"
 
@@ -109,6 +130,8 @@ fi
 if [[ "$1" == "--uninstall" ]]; then
   echo "Removing $script_path"
   rm -f "$script_path"
+  echo "Removing $sync_once_path (from PATH)"
+  rm -f "$sync_once_path"
   echo "Removing $plist_path"
   rm -f "$plist_path"
 
@@ -156,16 +179,33 @@ sed "s|{{LOCAL_PATH}}|${local_path}|;
      s|{{ERR_FILE}}|${stderr_log}|" plist.template > "$plist_path"
 
 echo "Creating $script_path"
-sed "s|{{UNISON_PATH}}|$(which unison)|;
+sed "s|{{INSTALLED_USER}}|${USER}|;
+     s|{{UNISON_PATH}}|$(which unison)|;
+     s|{{UNISON_FLAGS}}|${unison_flags_joined}|;
      s|{{LOG_FILE}}|${log_file}|;
      s|{{IGNORE_FILES}}|${ignore_files_joined}|;
      s|{{LOCAL_PATH}}|${local_path}|;
      s|{{CLOUD_PATH}}|${cloud_path}|;" script.template > "$script_path"
-chmod +x "$script_path"
+
+echo "Creating $sync_once_path"
+sed "s|{{INSTALLED_USER}}|${USER}|;
+     s|{{UNISON_PATH}}|$(which unison)|;
+     s|{{UNISON_FLAGS}}|${unison_flags_joined}|;
+     s|{{LOG_FILE}}|${log_file}|;
+     s|{{IGNORE_FILES}}|${ignore_files_joined}|;
+     s|{{LOCAL_PATH}}|${local_path}|;
+     s|{{CLOUD_PATH}}|${cloud_path}|;" sync-once.template > "$sync_once_path"
+
+chmod +x "$script_path" "$sync_once_path"
 
 # Load launchd config.
 echo "Loading $plist_path"
 launchctl load "$plist_path"
 
 echo ""
-echo "Sync script added. It will be triggered any time any of files inside local or cloud project folder changes."
+echo "Sync scripts created:"
+echo "  - Watch script: $script_path (automatic sync on file changes)"
+echo "  - Manual sync: $sync_once_path (available in PATH)"
+echo ""
+echo "The watch script will be triggered any time any files inside local or cloud project folders change."
+echo "Run 'sync-mirror' from anywhere to manually sync."
