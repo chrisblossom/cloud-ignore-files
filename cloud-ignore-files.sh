@@ -71,7 +71,7 @@ unison_flags=(
     "-links=true"         # Copy symbolic links
 
     # Safety CRITICAL
-    "-backup=Name *"      # Backup everything before changes
+    "-backup=\"Name *\""    # Backup everything before changes
     "-backuploc=central"  # Store backups in ~/.unison/backup/
     "-maxbackups=3"       # Keep 3 versions
 
