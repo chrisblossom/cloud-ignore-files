@@ -63,13 +63,28 @@ ignore_files=(
 
 # Unison flags (one per line for clarity and maintainability)
 unison_flags=(
-  "-batch"              # Non-interactive mode
-  "-perms=0o111"        # Only set executable bit on copied files
-  "-copyonconflict"     # Keep both versions on conflict
-  "-prefer=newer"       # Prefer newer file on conflict
-  "-times"              # Sync modification times
-  "-ignorecase=false"   # Case-sensitive matching
-  "-links=true"         # Follow symbolic links
+	# Core settings
+    "-batch"              # Non-interactive mode
+    "-auto"               # Accept non-conflicting changes (yes, useful even with batch)
+    "-times"              # Preserve modification times
+    "-perms=0o111"        # Only sync executable bit
+    "-links=true"         # Copy symbolic links
+
+    # Safety CRITICAL
+    "-backup=Name *"      # Backup everything before changes
+    "-backuploc=central"  # Store backups in ~/.unison/backup/
+    "-maxbackups=3"       # Keep 3 versions
+
+    # Conflict resolution
+    "-copyonconflict"     # Keep both versions on conflict
+    "-prefer=newer"       # Prefer newer file on conflict
+
+    # Performance
+    "-maxthreads=4"       # Parallel sync
+
+    # Batch mode helpers
+    "-ignorecase=false"   # Case-sensitive (for git)
+    "-confirmbigdel=false" # No prompts for deletions
 )
 
 # Join ignore files into a comma-separated string for Unison's Name {a,b,c} syntax
