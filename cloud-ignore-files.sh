@@ -63,17 +63,14 @@ ignore_files=(
 
 # Unison flags (one per line for clarity and maintainability)
 unison_flags=(
-	# Core settings
+	  # Core settings
     "-batch"              # Non-interactive mode
     "-auto"               # Accept non-conflicting changes (yes, useful even with batch)
     "-times"              # Preserve modification times
     "-perms=0o111"        # Only sync executable bit
     "-links=true"         # Copy symbolic links
 
-    # Safety CRITICAL
-    "-backup=\"Name *\""    # Backup everything before changes
-    "-backuploc=central"  # Store backups in ~/.unison/backup/
-    "-maxbackups=3"       # Keep 3 versions
+    # Safety CRITICAL - DISABLED: backup feature causes excessive disk writes DO NOT RE-ENABLE
 
     # Conflict resolution
     "-copyonconflict"     # Keep both versions on conflict
