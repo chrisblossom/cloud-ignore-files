@@ -59,6 +59,7 @@ ignore_files=(
   # Python
   "__pycache__"
   "venv*"
+  ".venv*"
 )
 
 # Unison flags (one per line for clarity and maintainability)
