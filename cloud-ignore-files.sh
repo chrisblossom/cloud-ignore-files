@@ -88,15 +88,15 @@ unison_flags=(
     "-confirmbigdel=false" # No prompts for deletions
 )
 
+##########################################################################
+# No need to modify the code below, unless you know what you're doing :D #
+##########################################################################
+
 # Join ignore files into a comma-separated string for Unison's Name {a,b,c} syntax
 ignore_files_joined="$(IFS=,; printf '%s' "${ignore_files[*]}")"
 
 # Join unison flags into a space-separated string for command line
 unison_flags_joined="${unison_flags[*]}"
-
-##########################################################################
-# No need to modify the code below, unless you know what you're doing :D #
-##########################################################################
 
 # Path to script and launchd config.
 base_path="${HOME}/.unison"
