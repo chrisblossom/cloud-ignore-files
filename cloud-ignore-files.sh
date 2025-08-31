@@ -74,7 +74,6 @@ unison_flags=(
     # Safety CRITICAL - DISABLED: backup feature causes excessive disk writes DO NOT RE-ENABLE
 
     # Conflict resolution
-    "-copyonconflict"     # Keep both versions on conflict
     "-prefer=newer"       # Prefer newer file on conflict
 
     # Performance - REDUCED: Lower concurrency to reduce Dropbox temp file conflicts
