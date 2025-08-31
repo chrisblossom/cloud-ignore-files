@@ -9,5 +9,14 @@ if [[ "$USER" != "$INSTALLED_USER" ]]; then
     exit 1
 fi
 
+# Setup signal handler
+cleanup() {
+    echo "Stopping sync"
+    exit 0
+}
+
+# Trap signals to cleanup properly  
+trap cleanup TERM INT EXIT
+
 # Watch mode sync using configured unison flags
 {{UNISON_PATH}} -repeat=watch {{UNISON_FLAGS}} -logfile={{LOG_FILE}} -ignore="Name {{{IGNORE_FILES}}}" "{{LOCAL_PATH}}" "{{CLOUD_PATH}}"
