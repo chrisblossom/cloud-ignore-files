@@ -105,8 +105,19 @@ label="com.chrisblossom.projects.CloudSyncIgnore"
 # Get brew exec directory (changes based on OS/architecture: Intel vs Apple Silicon)
 brew_exec_dir="$(dirname "$(command -v brew)")"
 
+# Architecture detection for custom unison binary
+# Custom build changes temp files from .unison.tmp to .~unison.temp (Dropbox ignores .~ files)
+# https://github.com/bcpierce00/unison/pull/447
+arch=$(uname -m)
+if [[ "$arch" == "arm64" ]]; then
+    unison_binary="unison-silicon"
+elif [[ "$arch" == "x86_64" ]]; then
+    unison_binary="unison-intel"
+fi
+
 script_path="${base_path}/bin/unison-cloud-sync-ignore"
 sync_once_path="${brew_exec_dir}/sync-mirror"
+unison_path="${brew_exec_dir}/${unison_binary}"
 plist_path="${HOME}/Library/LaunchAgents/${label}.plist"
 log_file="${base_path}/cloudsyncignore.unison.log"
 stdout_log="${base_path}/cloudsyncignore.stdout.log"
@@ -115,6 +126,7 @@ stderr_log="${base_path}/cloudsyncignore.stderr.log"
 echo "** SYNC INFORMATION **"
 echo "local_path: $local_path"
 echo "cloud_path: $cloud_path"
+echo "unison_binary: $unison_path (arch: $arch)"
 echo "ignore_files: ${ignore_files_joined}"
 echo "unison_flags: ${unison_flags_joined}"
 echo "log_file: $log_file"
@@ -123,7 +135,29 @@ echo "stderr_log: $stderr_log"
 echo "script_path: $script_path"
 echo "sync_once_path: $sync_once_path (in PATH)"
 echo "plist_path: $plist_path"
-echo -e "**********************\n"
+
+# Version check
+custom_ver=$("./$unison_binary" -version 2>/dev/null | grep -oE '[0-9]+\.[0-9]+(\.[0-9]+)?' | head -1)
+brew_ver=$(brew info unison 2>/dev/null | grep -E "^==> unison:" | awk '{print $4}')
+
+if [[ -n "$custom_ver" ]]; then
+  echo "custom_unison_version: $custom_ver"
+fi
+
+if [[ -n "$brew_ver" ]]; then
+  echo "homebrew_unison_version: $brew_ver"
+fi
+
+if [[ -n "$custom_ver" && -n "$brew_ver" && "$custom_ver" != "$brew_ver" ]]; then
+  echo ""
+  echo "***************************************************"
+  echo "WARNING: Custom unison version ($custom_ver) differs from Homebrew version ($brew_ver)"
+  echo "Consider updating your custom binaries if sync issues occur."
+  echo "***************************************************"
+  echo ""
+fi
+
+echo ""
 
 # Check if script is called with correct arguments.
 if [[ ("$1" != "--install" && "$1" != "--update" && "$1" != "--uninstall") || -n "$2" ]] || [[ -z "$1" ]]; then
@@ -171,14 +205,19 @@ if [[ -z "$HOMEBREW_PREFIX" ]]; then
   exit 1
 fi
 
-# Check for unison command and fail if not found.
-if ! command -v unison >/dev/null 2>&1; then
-  echo "Command 'unison' not found. Install it (brew install unison) and try this script again."
-  exit 1
-fi
-
 echo "creating directory $base_path/bin/"
 mkdir -p "$base_path/bin"
+
+# Copy custom unison binary
+if [[ -n "$unison_binary" ]]; then
+    cp "$unison_binary" "$unison_path"
+fi
+
+# Check for custom unison binary and fail if not found.
+if [[ ! -f "$unison_path" ]]; then
+  echo "Custom unison binary not found at $unison_path. Make sure $unison_binary was copied correctly."
+  exit 1
+fi
 
 # Create/clear log files and fix log file permissions.
 echo "(re)creating log files."
@@ -196,7 +235,7 @@ sed "s|{{LOCAL_PATH}}|${local_path}|;
 
 echo "Creating $script_path"
 sed "s|{{INSTALLED_USER}}|${USER}|;
-     s|{{UNISON_PATH}}|$(which unison)|;
+     s|{{UNISON_PATH}}|${unison_path}|;
      s|{{UNISON_FLAGS}}|${unison_flags_joined}|;
      s|{{LOG_FILE}}|${log_file}|;
      s|{{IGNORE_FILES}}|${ignore_files_joined}|;
@@ -205,7 +244,7 @@ sed "s|{{INSTALLED_USER}}|${USER}|;
 
 echo "Creating $sync_once_path"
 sed "s|{{INSTALLED_USER}}|${USER}|;
-     s|{{UNISON_PATH}}|$(which unison)|;
+     s|{{UNISON_PATH}}|${unison_path}|;
      s|{{UNISON_FLAGS}}|${unison_flags_joined}|;
      s|{{LOG_FILE}}|${log_file}|;
      s|{{IGNORE_FILES}}|${ignore_files_joined}|;
