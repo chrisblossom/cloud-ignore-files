@@ -80,7 +80,10 @@ unison_flags=(
     # Performance - REDUCED: Lower concurrency to reduce Dropbox temp file conflicts
     "-maxthreads=1"       # Single-threaded sync to avoid multiple temp files
 
-    # Batch mode helpers
+    # Reliability
+    "-retry=3"            # Retry failed synchronizations 3 times
+    
+    # Batch mode helpers  
     "-ignorecase=false"   # Case-sensitive (for git)
     "-confirmbigdel=false" # No prompts for deletions
 )
