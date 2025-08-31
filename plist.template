@@ -10,6 +10,8 @@
     </array>
     <key>RunAtLoad</key>
     <true/>
+    <key>LimitLoadToSessionType</key>
+    <string>Aqua</string>
     <key>StandardOutPath</key>
     <string>{{LOG_FILE}}</string>
     <key>StandardErrorPath</key>
