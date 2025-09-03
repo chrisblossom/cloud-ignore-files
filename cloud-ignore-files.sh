@@ -1,11 +1,19 @@
 #!/usr/bin/env bash
 #
-# v1.0.0
+# Cloud Ignore Files - Sync with Power Nap Protection  
+# v2.0.0
+#
+# Bidirectional sync with lock screen detection, watch mode recovery, 
+# and custom Dropbox-compatible unison binaries. Pauses sync automatically 
+# during Power Nap when screen is locked.
 #
 # Usage:
-#  - Call script to register sync script with launchd.
-#  - Call with `--install` to install/update sync. (--update will do the same)
-#  - Call with `--uninstall` to unregister from launchd and clean up files.
+#  --install   Install/update sync with architecture detection and custom binaries
+#  --update    Same as --install  
+#  --uninstall Remove sync service and clean up files
+#  --info      Show configuration and status
+#
+# Features: Lock detection • Session logging • Watch recovery • Custom binaries
 
 # Adjust the paths to match your system (do not end the path with /).
 # Path to local (working) projects folder
@@ -44,7 +52,6 @@ ignore_files=(
   # IDE
   ".vscode"
   ".idea"
-  ".cursorrules"
 
   # Rust
   "target"
@@ -234,6 +241,7 @@ sed "s|{{LOCAL_PATH}}|${local_path}|;
 
 echo "Creating $script_path"
 sed "s|{{INSTALLED_USER}}|${USER}|;
+     s|{{BASE_PATH}}|${base_path}|;
      s|{{UNISON_PATH}}|${unison_path}|;
      s|{{UNISON_FLAGS}}|${unison_flags_joined}|;
      s|{{LOG_FILE}}|${log_file}|;
@@ -243,6 +251,7 @@ sed "s|{{INSTALLED_USER}}|${USER}|;
 
 echo "Creating $sync_once_path"
 sed "s|{{INSTALLED_USER}}|${USER}|;
+     s|{{BASE_PATH}}|${base_path}|;
      s|{{UNISON_PATH}}|${unison_path}|;
      s|{{UNISON_FLAGS}}|${unison_flags_joined}|;
      s|{{LOG_FILE}}|${log_file}|;

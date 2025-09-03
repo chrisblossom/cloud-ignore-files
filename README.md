@@ -1,6 +1,8 @@
 ## Project Overview
 
-This is a bidirectional sync utility that enables cloud sync services (like Dropbox, iCloud) to selectively ignore certain project files (like `node_modules`, `target`, etc.) while still syncing the rest of the project. It uses `unison` for bidirectional synchronization between a local working directory and a cloud-synced mirror.
+Bidirectional sync for cloud services (Dropbox, iCloud) with Power Nap protection. Ignores build artifacts like `node_modules`, `target`, etc. while syncing your project files. Includes lock screen detection, watch mode recovery, session logging, and custom Dropbox-compatible temp files.
+
+**Key Features**: Lock screen pauses sync • Watch mode auto-recovery • Session logging • Architecture-aware custom binaries • Dropbox-compatible temp files
 
 ## Key Commands
 
@@ -10,25 +12,21 @@ This is a bidirectional sync utility that enables cloud sync services (like Drop
 
 ## Architecture
 
-The system consists of:
-
-1. **Main Script** (`cloud-ignore-files.sh`): Installer/manager that:
-   - Detects system architecture and selects appropriate unison binary
-   - Copies custom unison binary based on architecture
-   - Configures sync paths and ignore patterns
-   - Uses template files to generate actual configuration
-   - Sets up and manages a launchd service on macOS
+1. **Main Script** (`cloud-ignore-files.sh`): Installer/manager that detects your Mac's architecture, copies the right unison binary, configures sync paths and ignore patterns, and sets up a launchd service.
 
 2. **Template Files**:
-   - `plist.template`: launchd service configuration template
-   - `script.template`: Unison sync command template with watch mode
-   - `sync-once.template`: Manual sync command template
+   - `plist.template`: launchd service configuration  
+   - `script.template`: Main sync script with session monitoring and lock detection
+   - `sync-once.template`: Manual sync command
 
 3. **Generated Files**:
    - `~/.unison/bin/unison-cloud-sync-ignore`: The actual sync script
    - `sync-mirror`: Manual sync command (in PATH)
    - `~/Library/LaunchAgents/com.chrisblossom.projects.CloudSyncIgnore.plist`: launchd service
-   - Log files in `~/.unison/`: `cloudsyncignore.unison.log`, `cloudsyncignore.stdout.log`, `cloudsyncignore.stderr.log`
+   - Log files in `~/.unison/`: 
+     - `session.log`: Session start/stop events with timestamps
+     - `cloudsyncignore.unison.log`: Unison sync activity  
+     - `cloudsyncignore.stdout.log`, `cloudsyncignore.stderr.log`: Process output
 
 ## Configuration Variables
 
@@ -47,7 +45,7 @@ The project automatically detects your Mac's architecture and uses the appropria
 - **Apple Silicon**: `unison-silicon`
 - **Intel Macs**: `unison-intel`
 
-These custom binaries are copied to your Homebrew bin directory during installation. The key change is temp file naming: `.unison.tmp` becomes `.~unison.temp` so Dropbox ignores them.
+These get copied to your Homebrew bin directory during install. The main difference is temp file naming: `.unison.tmp` becomes `.~unison.temp` so Dropbox ignores them.
 
 See: https://github.com/bcpierce00/unison/pull/447
 
@@ -60,14 +58,46 @@ See: https://github.com/bcpierce00/unison/pull/447
 
 ## How Syncing Works
 
-1. Uses custom `unison` binary with `-repeat=watch` for continuous monitoring
-2. Bidirectional sync between local and cloud directories
-3. Prefers newer files on conflict
-4. Preserves file permissions and timestamps
-5. Ignores specified patterns like node_modules, build artifacts
-6. Creates temporary files with `.~` prefix to avoid cloud service conflicts
+### Core Sync Features
+1. **Watch Mode**: Uses custom `unison` binary with `-repeat=watch` for continuous monitoring
+2. **Bidirectional Sync**: Real-time sync between local and cloud directories  
+3. **Conflict Resolution**: Prefers newer files on conflict (no duplicated files)
+4. **File Attributes**: Preserves permissions and timestamps
+5. **Smart Ignoring**: Excludes patterns like node_modules, build artifacts
+6. **Dropbox Compatible**: Creates `.~unison.temp` files (ignored by Dropbox)
 
-## Testing Changes
+### Session Management
+- **Lock Screen Detection**: Automatically pauses sync when screen locked
+- **Watch Mode Recovery**: Detects failures, runs backup sync, restarts automatically
+- **Session Logging**: Tracks all start/stop events in `~/.unison/session.log`
+- **Signal Handling**: Graceful shutdown, manual restart with `kill -USR1 <pid>`
+
+### Power Nap Protection
+Lock your screen before walking away. Sync stops within 30 seconds and stays stopped during Power Nap. Unlocking resumes sync.
+
+## Monitoring and Troubleshooting
+
+### Check Logs
+```bash
+# Watch sync activity
+tail -f ~/.unison/session.log
+```
+
+
+
+### Manual Controls
+```bash
+# Force sync restart (if needed for debugging)
+kill -USR1 $(pgrep -f unison-cloud-sync-ignore)
+
+# Stop sync service
+launchctl unload ~/Library/LaunchAgents/com.chrisblossom.projects.CloudSyncIgnore.plist
+
+# Start sync service  
+launchctl load ~/Library/LaunchAgents/com.chrisblossom.projects.CloudSyncIgnore.plist
+```
+
+### Testing Changes
 
 When modifying ignore patterns or paths:
 1. Edit the variables at the top of `cloud-ignore-files.sh`

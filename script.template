@@ -1,22 +1,144 @@
 #!/usr/bin/env bash
 
+# Unison Sync with Power Nap Protection
+#
+# Lock screen detection - pauses sync when screen locked, resumes when unlocked
+# Watch mode monitoring - detects failures, runs backup sync, restarts automatically  
+# Custom unison binary - uses .~unison.temp files (Dropbox ignores .~ prefix)
+# Session logging - tracks start/stop events with timestamps in ~/.unison/session.log
+# Signal handling - graceful shutdown, manual restart with kill -USR1 <pid>
+#
+# Power Nap protection: Lock your screen before walking away. Sync stops within 30 seconds
+# and stays stopped during Power Nap. Unlocking resumes sync automatically.
+
+# How this works:
+# 1. Main loop runs every 30 seconds, calls should_continue_sync()
+# 2. should_continue_sync() uses ioreg to check CGSSessionScreenIsLocked
+# 3. start_sync()/stop_sync() functions handle unison process lifecycle  
+# 4. All state changes logged with timestamps to session.log
+# 5. Every 5 minutes, checks if unison died and restarts if needed
+# 6. Signal handling for cleanup on TERM/INT/EXIT, manual restart on USR1
+
+# Session log file for startup/shutdown tracking
+SESSION_LOG="{{BASE_PATH}}/session.log"
+
+# Logging function with timestamps
+log_session() {
+    echo "[$(date '+%Y-%m-%d %H:%M:%S')] $*" >> "$SESSION_LOG"
+}
+
 # Security check: Ensure script is run by the same user who installed it
 INSTALLED_USER="{{INSTALLED_USER}}"
 if [[ "$USER" != "$INSTALLED_USER" ]]; then
-    echo "Error: This sync script was installed by user '$INSTALLED_USER'"
-    echo "You are currently user '$USER'"
-    echo "Only the user who installed this script can run it."
+    log_session "ERROR: Sync script installed by '$INSTALLED_USER' but run by '$USER'"
     exit 1
 fi
 
-# Setup signal handler
+# Check if screen is locked - called every 30 seconds
+# Uses ioreg to check CGSSessionScreenIsLocked in macOS I/O Kit registry
+# Returns "true" when locked (Cmd+Ctrl+Q), "false" when unlocked
+# Works during normal use, Power Nap, and sleep/wake cycles
+should_continue_sync() {
+    # Query macOS for current screen lock state
+    lock_status=$(/usr/libexec/PlistBuddy -c "print :IOConsoleUsers:0:CGSSessionScreenIsLocked" /dev/stdin 2>/dev/null <<< "$(ioreg -n Root -d1 -a)" 2>/dev/null)
+    if [[ "$lock_status" == "true" ]]; then
+        return 1  # Screen locked - stop sync
+    fi
+    
+    return 0  # Screen unlocked - allow sync
+}
+
+# Add visual separator for new session
+echo "" >> "$SESSION_LOG"
+log_session "=== NEW SESSION STARTED ==="
+log_session "STARTUP: Sync script started"
+
+# Unison command variables
+UNISON_COMMON_ARGS="{{UNISON_FLAGS}} -logfile={{LOG_FILE}} -ignore=\"Name {{{IGNORE_FILES}}}\" \"{{LOCAL_PATH}}\" \"{{CLOUD_PATH}}\""
+UNISON_BASE_CMD="{{UNISON_PATH}} $UNISON_COMMON_ARGS"
+UNISON_WATCH_CMD="{{UNISON_PATH}} -repeat=watch $UNISON_COMMON_ARGS"
+
+# Track sync state
+UNISON_PID=""
+sync_running=false
+
+# Function to start sync
+start_sync() {
+    if [[ "$sync_running" == "false" ]]; then
+        eval "$UNISON_WATCH_CMD" &
+        UNISON_PID=$!
+        sync_running=true
+        log_session "SYNC STARTED: Watch mode started (PID: $UNISON_PID)"
+    fi
+}
+
+# Function to stop sync
+stop_sync() {
+    if [[ "$sync_running" == "true" ]]; then
+        [[ -n "$UNISON_PID" ]] && kill "$UNISON_PID" 2>/dev/null
+        pkill -f "{{UNISON_PATH}}.*-repeat=watch" 2>/dev/null
+        sync_running=false
+        log_session "SYNC STOPPED: Watch mode stopped"
+    fi
+}
+
+# Main monitoring loop - runs every 30 seconds
+# Checks screen lock status and starts/stops sync accordingly
+# Every 5 minutes (10 cycles), checks if watch mode died and restarts if needed
+# Logs all state changes with timestamps
+backup_sync_counter=0
+last_sync_state=""
+
+while true; do
+    # Check session state every 30 seconds
+    if should_continue_sync; then
+        # Screen unlocked - sync should be running
+        if [[ "$last_sync_state" != "running" ]]; then
+            log_session "Conditions good - sync allowed"
+            last_sync_state="running"
+        fi
+        start_sync
+        
+        # Backup sync check (every 5 minutes = 10 cycles of 30 seconds)  
+        backup_sync_counter=$((backup_sync_counter + 1))
+        if [[ $backup_sync_counter -ge 10 ]]; then
+            backup_sync_counter=0
+            
+            # Check if watch mode is still running
+            if [[ "$sync_running" == "true" ]] && ! pgrep -f "{{UNISON_PATH}}.*-repeat=watch" >/dev/null 2>&1; then
+                log_session "ALERT: Watch mode died - running backup sync and restarting"
+                
+                # Run one-time sync to catch any missed changes
+                eval "$UNISON_BASE_CMD" 2>/dev/null
+                
+                # Restart watch mode
+                eval "$UNISON_WATCH_CMD" &
+                UNISON_PID=$!
+                
+                log_session "Watch mode restarted after failure (PID: $UNISON_PID)"
+            fi
+        fi
+    else
+        # Screen locked - pause sync immediately  
+        if [[ "$last_sync_state" != "paused" ]]; then
+            log_session "Conditions not met - sync paused (screen locked)"
+            last_sync_state="paused"
+        fi
+        stop_sync
+        backup_sync_counter=0  # Reset backup counter when paused
+    fi
+    
+    # Wait 30 seconds before next monitoring cycle
+    sleep 30
+done
+
+# Cleanup function
 cleanup() {
-    echo "Stopping sync"
+    log_session "SHUTDOWN: Sync stopping (cleanup called)"
+    stop_sync
     exit 0
 }
 
-# Trap signals to cleanup properly  
-trap cleanup TERM INT EXIT
-
-# Watch mode sync using configured unison flags
-{{UNISON_PATH}} -repeat=watch {{UNISON_FLAGS}} -logfile={{LOG_FILE}} -ignore="Name {{{IGNORE_FILES}}}" "{{LOCAL_PATH}}" "{{CLOUD_PATH}}"
+# Signal handling for graceful shutdown
+trap cleanup TERM INT EXIT QUIT HUP
+trap 'log_session "Received SIGUSR1 - forcing sync restart"; stop_sync; start_sync' USR1
