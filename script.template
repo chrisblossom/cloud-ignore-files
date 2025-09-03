@@ -67,6 +67,7 @@ start_sync() {
     if [[ "$sync_running" == "false" ]]; then
         # Kill any orphaned unison processes first
         pkill -f "{{UNISON_PATH}}.*-repeat=watch" 2>/dev/null || true
+        sleep 1  # Give processes time to die
         
         # Run full sync first to ensure clean state
         log_session "Running full sync before starting watch mode"
@@ -83,9 +84,10 @@ start_sync() {
 # Function to stop sync
 stop_sync() {
     if [[ "$sync_running" == "true" ]]; then
+        sync_running=false  # Set state first to prevent races
         [[ -n "$UNISON_PID" ]] && kill "$UNISON_PID" 2>/dev/null
         pkill -f "{{UNISON_PATH}}.*-repeat=watch" 2>/dev/null
-        sync_running=false
+        UNISON_PID=""
         log_session "SYNC STOPPED: Watch mode stopped"
     fi
 }
@@ -104,13 +106,16 @@ while true; do
             last_sync_state="running"
         fi
         
-        # Check if watch mode is still running and restart immediately if needed
-        if [[ "$sync_running" == "true" ]] && ! pgrep -f "{{UNISON_PATH}}.*-repeat=watch" >/dev/null 2>&1; then
-            log_session "ALERT: Watch mode died - restarting immediately"
-            stop_sync
+        # Check if watch mode needs to be started or restarted
+        if [[ "$sync_running" == "false" ]]; then
             start_sync
-        elif [[ "$sync_running" == "false" ]]; then
-            start_sync
+        elif [[ "$sync_running" == "true" ]]; then
+            # Check if our tracked process is still alive
+            if [[ -n "$UNISON_PID" ]] && ! kill -0 "$UNISON_PID" 2>/dev/null; then
+                log_session "ALERT: Watch mode died (PID $UNISON_PID) - restarting immediately"
+                stop_sync
+                start_sync
+            fi
         fi
     else
         # Screen locked - pause sync immediately  
@@ -133,5 +138,8 @@ cleanup() {
 }
 
 # Signal handling for graceful shutdown
-trap cleanup TERM INT EXIT QUIT HUP
+trap cleanup TERM INT QUIT HUP
 trap 'log_session "Received SIGUSR1 - forcing sync restart"; stop_sync; start_sync' USR1
+
+# Set up EXIT trap separately to avoid double cleanup
+trap 'cleanup' EXIT
