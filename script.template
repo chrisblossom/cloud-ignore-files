@@ -53,10 +53,10 @@ echo "" >> "$SESSION_LOG"
 log_session "=== NEW SESSION STARTED ==="
 log_session "STARTUP: Sync script started"
 
-# Unison command variables
-UNISON_COMMON_ARGS="{{UNISON_FLAGS}} -logfile={{LOG_FILE}} -ignore=\"Name {{{IGNORE_FILES}}}\" \"{{LOCAL_PATH}}\" \"{{CLOUD_PATH}}\""
-UNISON_BASE_CMD="{{UNISON_PATH}} $UNISON_COMMON_ARGS"
-UNISON_WATCH_CMD="{{UNISON_PATH}} -repeat=watch $UNISON_COMMON_ARGS"
+# Unison command variables - using arrays to avoid eval issues
+UNISON_COMMON_ARGS=({{UNISON_FLAGS}} -logfile={{LOG_FILE}} -ignore="Name {{{IGNORE_FILES}}}" "{{LOCAL_PATH}}" "{{CLOUD_PATH}}")
+UNISON_BASE_CMD=("{{UNISON_PATH}}" "${UNISON_COMMON_ARGS[@]}")
+UNISON_WATCH_CMD=("{{UNISON_PATH}}" -repeat=watch "${UNISON_COMMON_ARGS[@]}")
 
 # Track sync state
 UNISON_PID=""
@@ -65,7 +65,10 @@ sync_running=false
 # Function to start sync
 start_sync() {
     if [[ "$sync_running" == "false" ]]; then
-        eval "$UNISON_WATCH_CMD" &
+        # Kill any orphaned unison processes first
+        pkill -f "{{UNISON_PATH}}.*-repeat=watch" 2>/dev/null || true
+        
+        "${UNISON_WATCH_CMD[@]}" &
         UNISON_PID=$!
         sync_running=true
         log_session "SYNC STARTED: Watch mode started (PID: $UNISON_PID)"
@@ -108,14 +111,14 @@ while true; do
             if [[ "$sync_running" == "true" ]] && ! pgrep -f "{{UNISON_PATH}}.*-repeat=watch" >/dev/null 2>&1; then
                 log_session "ALERT: Watch mode died - running backup sync and restarting"
                 
+                # Proper cleanup first
+                stop_sync
+                
                 # Run one-time sync to catch any missed changes
-                eval "$UNISON_BASE_CMD" 2>/dev/null
+                "${UNISON_BASE_CMD[@]}" 2>/dev/null
                 
-                # Restart watch mode
-                eval "$UNISON_WATCH_CMD" &
-                UNISON_PID=$!
-                
-                log_session "Watch mode restarted after failure (PID: $UNISON_PID)"
+                # Restart with proper state management
+                start_sync
             fi
         fi
     else
