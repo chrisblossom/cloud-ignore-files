@@ -62,12 +62,17 @@ UNISON_WATCH_CMD=("{{UNISON_PATH}}" -repeat=watch "${UNISON_COMMON_ARGS[@]}")
 UNISON_PID=""
 sync_running=false
 
-# Function to start sync
+# Function to start sync - does full sync then starts watch mode
 start_sync() {
     if [[ "$sync_running" == "false" ]]; then
         # Kill any orphaned unison processes first
         pkill -f "{{UNISON_PATH}}.*-repeat=watch" 2>/dev/null || true
         
+        # Run full sync first to ensure clean state
+        log_session "Running full sync before starting watch mode"
+        "${UNISON_BASE_CMD[@]}"
+        
+        # Then start watch mode
         "${UNISON_WATCH_CMD[@]}" &
         UNISON_PID=$!
         sync_running=true
@@ -87,9 +92,7 @@ stop_sync() {
 
 # Main monitoring loop - runs every 30 seconds
 # Checks screen lock status and starts/stops sync accordingly
-# Every 5 minutes (10 cycles), checks if watch mode died and restarts if needed
-# Logs all state changes with timestamps
-backup_sync_counter=0
+# Immediately restarts watch mode if it dies
 last_sync_state=""
 
 while true; do
@@ -100,26 +103,14 @@ while true; do
             log_session "Conditions good - sync allowed"
             last_sync_state="running"
         fi
-        start_sync
         
-        # Backup sync check (every 5 minutes = 10 cycles of 30 seconds)  
-        backup_sync_counter=$((backup_sync_counter + 1))
-        if [[ $backup_sync_counter -ge 10 ]]; then
-            backup_sync_counter=0
-            
-            # Check if watch mode is still running
-            if [[ "$sync_running" == "true" ]] && ! pgrep -f "{{UNISON_PATH}}.*-repeat=watch" >/dev/null 2>&1; then
-                log_session "ALERT: Watch mode died - running backup sync and restarting"
-                
-                # Proper cleanup first
-                stop_sync
-                
-                # Run one-time sync to catch any missed changes
-                "${UNISON_BASE_CMD[@]}" 2>/dev/null
-                
-                # Restart with proper state management
-                start_sync
-            fi
+        # Check if watch mode is still running and restart immediately if needed
+        if [[ "$sync_running" == "true" ]] && ! pgrep -f "{{UNISON_PATH}}.*-repeat=watch" >/dev/null 2>&1; then
+            log_session "ALERT: Watch mode died - restarting immediately"
+            stop_sync
+            start_sync
+        elif [[ "$sync_running" == "false" ]]; then
+            start_sync
         fi
     else
         # Screen locked - pause sync immediately  
@@ -128,7 +119,6 @@ while true; do
             last_sync_state="paused"
         fi
         stop_sync
-        backup_sync_counter=0  # Reset backup counter when paused
     fi
     
     # Wait 30 seconds before next monitoring cycle
