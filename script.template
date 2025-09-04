@@ -14,9 +14,9 @@
 # How this works:
 # 1. Main loop runs every 30 seconds, calls should_continue_sync()
 # 2. should_continue_sync() uses ioreg to check CGSSessionScreenIsLocked
-# 3. start_sync()/stop_sync() functions handle unison process lifecycle  
+# 3. Direct process checking with pgrep/pkill for simple lifecycle management
 # 4. All state changes logged with timestamps to session.log
-# 5. Every 5 minutes, checks if unison died and restarts if needed
+# 5. Immediately detects and restarts dead processes (no 5-minute delay)
 # 6. Signal handling for cleanup on TERM/INT/EXIT, manual restart on USR1
 
 # Session log file for startup/shutdown tracking
@@ -58,47 +58,11 @@ UNISON_COMMON_ARGS=({{UNISON_FLAGS}} -logfile={{LOG_FILE}} -ignore="Name {{{IGNO
 UNISON_BASE_CMD=("{{UNISON_PATH}}" "${UNISON_COMMON_ARGS[@]}")
 UNISON_WATCH_CMD=("{{UNISON_PATH}}" -repeat=watch "${UNISON_COMMON_ARGS[@]}")
 
-# Track sync state
-UNISON_PID=""
-sync_running=false
-
-# Function to start sync - does full sync then starts watch mode
-start_sync() {
-    if [[ "$sync_running" == "false" ]]; then
-        # Kill any orphaned unison processes first
-        pkill -f "{{UNISON_PATH}}.*-repeat=watch" 2>/dev/null || true
-        sleep 1  # Give processes time to die
-        
-        # Run full sync first to ensure clean state
-        log_session "Running full sync before starting watch mode"
-        "${UNISON_BASE_CMD[@]}"
-        
-        # Then start watch mode
-        "${UNISON_WATCH_CMD[@]}" &
-        UNISON_PID=$!
-        sync_running=true
-        log_session "SYNC STARTED: Watch mode started (PID: $UNISON_PID)"
-    fi
-}
-
-# Function to stop sync
-stop_sync() {
-    if [[ "$sync_running" == "true" ]]; then
-        sync_running=false  # Set state first to prevent races
-        [[ -n "$UNISON_PID" ]] && kill "$UNISON_PID" 2>/dev/null
-        pkill -f "{{UNISON_PATH}}.*-repeat=watch" 2>/dev/null
-        UNISON_PID=""
-        log_session "SYNC STOPPED: Watch mode stopped"
-    fi
-}
-
-# Main monitoring loop - runs every 30 seconds
-# Checks screen lock status and starts/stops sync accordingly
-# Immediately restarts watch mode if it dies
+# Simple monitoring loop - runs every 30 seconds  
 last_sync_state=""
+sync_was_running=false
 
 while true; do
-    # Check session state every 30 seconds
     if should_continue_sync; then
         # Screen unlocked - sync should be running
         if [[ "$last_sync_state" != "running" ]]; then
@@ -106,40 +70,47 @@ while true; do
             last_sync_state="running"
         fi
         
-        # Check if watch mode needs to be started or restarted
-        if [[ "$sync_running" == "false" ]]; then
-            start_sync
-        elif [[ "$sync_running" == "true" ]]; then
-            # Check if our tracked process is still alive
-            if [[ -n "$UNISON_PID" ]] && ! kill -0 "$UNISON_PID" 2>/dev/null; then
-                log_session "ALERT: Watch mode died (PID $UNISON_PID) - restarting immediately"
-                stop_sync
-                start_sync
+        # Check if sync process is actually running
+        if ! pgrep -f "{{UNISON_PATH}}.*-repeat=watch" >/dev/null; then
+            if [[ "$sync_was_running" == "true" ]]; then
+                log_session "ALERT: Watch mode died - restarting immediately"
+            else
+                log_session "SYNC STARTED: Starting watch mode"
             fi
+            
+            # Run full sync first, then start watch mode
+            "${UNISON_BASE_CMD[@]}"
+            sleep 1
+            "${UNISON_WATCH_CMD[@]}" &
+            sync_was_running=true
         fi
     else
-        # Screen locked - pause sync immediately  
+        # Screen locked - pause sync immediately
         if [[ "$last_sync_state" != "paused" ]]; then
             log_session "Conditions not met - sync paused (screen locked)"
             last_sync_state="paused"
         fi
-        stop_sync
+        
+        if pgrep -f "{{UNISON_PATH}}.*-repeat=watch" >/dev/null; then
+            log_session "SYNC STOPPED: Stopping watch mode"
+            pkill -f "{{UNISON_PATH}}.*-repeat=watch"
+            sync_was_running=false
+        fi
     fi
     
-    # Wait 30 seconds before next monitoring cycle
     sleep 30
 done
 
 # Cleanup function
 cleanup() {
     log_session "SHUTDOWN: Sync stopping (cleanup called)"
-    stop_sync
+    pkill -f "{{UNISON_PATH}}.*-repeat=watch" 2>/dev/null || true
     exit 0
 }
 
 # Signal handling for graceful shutdown
 trap cleanup TERM INT QUIT HUP
-trap 'log_session "Received SIGUSR1 - forcing sync restart"; stop_sync; start_sync' USR1
+trap 'log_session "Received SIGUSR1 - forcing sync restart"; pkill -f "{{UNISON_PATH}}.*-repeat=watch" 2>/dev/null || true; sync_was_running=false' USR1
 
 # Set up EXIT trap separately to avoid double cleanup
 trap 'cleanup' EXIT
