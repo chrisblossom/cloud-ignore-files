@@ -74,14 +74,20 @@ while true; do
         if ! pgrep -f "{{UNISON_PATH}}.*-repeat=watch" >/dev/null; then
             if [[ "$sync_was_running" == "true" ]]; then
                 log_session "ALERT: Watch mode died - restarting immediately"
-            else
-                log_session "SYNC STARTED: Starting watch mode"
             fi
             
             # Run full sync first, then start watch mode
-            "${UNISON_BASE_CMD[@]}"
+            log_session "Running full sync before starting watch mode"
+            if "${UNISON_BASE_CMD[@]}"; then
+                log_session "Full sync completed successfully"
+            else
+                log_session "WARNING: Full sync completed with errors (exit code: $?)"
+            fi
+            
             sleep 1
             "${UNISON_WATCH_CMD[@]}" &
+            watch_pid=$!
+            log_session "SYNC STARTED: Watch mode started (PID: $watch_pid)"
             sync_was_running=true
         fi
     else
