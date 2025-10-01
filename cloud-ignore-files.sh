@@ -66,7 +66,6 @@ ignore_files=(
 unison_flags=(
 	  # Core settings
     "-batch"              # Non-interactive mode
-    "-auto"               # Accept non-conflicting changes (yes, useful even with batch)
     "-times"              # Preserve modification times
     "-perms=0o111"        # Only sync executable bit
     "-links=true"         # Copy symbolic links
