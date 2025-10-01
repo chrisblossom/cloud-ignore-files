@@ -60,6 +60,10 @@ ignore_files=(
   "__pycache__"
   "venv*"
   ".venv*"
+  
+  # Solana
+  ".program_id"
+  "test-ledger"
 )
 
 # Unison flags (one per line for clarity and maintainability)
