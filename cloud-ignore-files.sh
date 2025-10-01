@@ -80,15 +80,11 @@ unison_flags=(
     "-copyonconflict"     # Keep both versions on conflict
     "-prefer=newer"       # Prefer newer file on conflict
 
-    # Performance - REDUCED: Lower concurrency to reduce Dropbox temp file conflicts
-    "-maxthreads=1"       # Single-threaded sync to avoid multiple temp files
-
-    # Reliability
-    "-retry=3"            # Retry failed synchronizations 3 times
-    
     # Batch mode helpers  
     "-ignorecase=false"   # Case-sensitive (for git)
     "-confirmbigdel=false" # No prompts for deletions
+	
+	"-rsrc=false"
 )
 
 ##########################################################################
