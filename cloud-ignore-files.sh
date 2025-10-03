@@ -90,11 +90,18 @@ ignore_regexs=(
 unison_flags=(
 	# Core settings
 	"-batch"       # Non-interactive mode
+	"-auto"        # Auto-resolve conflicts
 	"-times"       # Preserve modification times
 	"-perms=0o111" # Only sync executable bit
 	"-links=true"  # Copy symbolic links
 
 	# Safety CRITICAL - DISABLED: backup feature causes excessive disk writes DO NOT RE-ENABLE
+
+	# Performance - REDUCED: Lower concurrency to reduce Dropbox temp file conflicts
+    "-maxthreads=1"       # Single-threaded sync to avoid multiple temp files
+
+    # Reliability
+    "-retry=3"            # Retry failed synchronizations 3 times
 
 	# Conflict resolution
 	"-copyonconflict" # Keep both versions on conflict
