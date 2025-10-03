@@ -43,11 +43,17 @@ Key variables in `cloud-ignore-files.sh`:
 
 `ignore_regexs` are passed as repeated Unison flags like `-ignore='Regex <pattern>'`.
 
+**Important**: Unison's `Regex` patterns use POSIX ERE and are anchored to the whole path (must match the entire path). Hex escapes like `\x00` and POSIX character classes are NOT supported.
+
 Example Git-related defaults included:
 
-- `ignore_regexs` includes patterns to ignore Git lock files and pack temp files:
-  - `.*/\\.git/.*\\.lock$`
-  - `.*/\\.git/objects/pack/(tmp_|\\.tmp-).*`
+- `ignore_regexs` includes patterns to ignore Git lock files, pack temp files, and Dropbox-problematic filenames:
+  - `.*/\\.git/.*\\.lock$` - Git lock files
+  - `.*/\\.git/objects/pack/(tmp_|\\.tmp-).*` - Pack temp files
+  - `.*/\\.git/objects/pack/pack-.*\\.(idx|pack)\\.tmp` - Pack .tmp files
+  - `.*/\\.git/.*[<>:"\\\\|?*].*` - Windows-invalid characters
+  - `.*/\\.git/.*[ \\.]$` - Files ending with space/dot
+  - `.*/\\.git/(.*/)?[^/]*[ \\.]/.*` - Intermediate directories ending with space/dot
 
 ## Custom Unison Binaries
 

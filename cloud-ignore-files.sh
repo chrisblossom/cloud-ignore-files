@@ -69,10 +69,21 @@ ignore_files=(
 # Regex-based ignore patterns for Unison (full-path regex). Each entry should be the
 # pattern only (without the leading "Regex "). They are passed to Unison as
 # repeated -ignore='Regex <pattern>' arguments.
+#
+# NOTE: Unison's Regex uses POSIX ERE and is anchored to the whole path (must match
+# the entire path). Hex escapes like \x00 and POSIX character classes are NOT supported.
 ignore_regexs=(
 	# Git temp files
 	".*/\\.git/.*\\.lock$"
 	".*/\\.git/objects/pack/(tmp_|\\.tmp-).*"
+	".*/\\.git/objects/pack/pack-.*\\.(idx|pack)\\.tmp"
+
+	# Dropbox/Windows-invalid characters (inside .git only)
+	".*/\\.git/.*[<>:\"\\\\|?*].*"
+
+	# Any component under .git that ends with a space or a dot
+	".*/\\.git/.*[ \\.]$"                      # filename itself ends with space/dot
+	".*/\\.git/(.*/)?[^/]*[ \\.]/.*"           # an intermediate directory ends with space/dot	
 )
 
 # Unison flags (one per line for clarity and maintainability)
@@ -107,11 +118,12 @@ ignore_files_joined="$(
 )"
 
 # Build space-separated list of -ignore='Regex <pattern>' args for Unison
-ignore_regexs_joined="$(
-	for pattern in "${ignore_regexs[@]}"; do
-		printf "%s " "-ignore=\"Regex ${pattern}\""
-	done
-)"
+ignore_regexs_joined=""
+for pattern in "${ignore_regexs[@]}"; do
+	# Escape single quotes in the pattern by replacing ' with '\''
+	escaped_pattern="${pattern//\'/\'\\\'\'}"
+	ignore_regexs_joined="${ignore_regexs_joined}-ignore='Regex ${escaped_pattern}' "
+done
 
 # Join unison flags into a space-separated string for command line
 unison_flags_joined="${unison_flags[*]}"
@@ -253,24 +265,46 @@ sed "s|{{LOCAL_PATH}}|${local_path}|;
      s|{{ERR_FILE}}|${stderr_log}|" plist.template >"$plist_path"
 
 echo "Creating $script_path"
-sed "s|{{INSTALLED_USER}}|${USER}|;
-     s|{{UNISON_PATH}}|${unison_path}|;
-     s|{{UNISON_FLAGS}}|${unison_flags_joined}|;
-     s|{{LOG_FILE}}|${log_file}|;
-     s|{{IGNORE_FILES}}|${ignore_files_joined}|;
-     s#{{IGNORE_REGEXS}}#${ignore_regexs_joined}#;
-     s|{{LOCAL_PATH}}|${local_path}|;
-     s|{{CLOUD_PATH}}|${cloud_path}|;" script.template >"$script_path"
+# Use perl with environment variables to avoid quoting issues
+TEMPLATE_USER="$USER" \
+TEMPLATE_UNISON_PATH="$unison_path" \
+TEMPLATE_UNISON_FLAGS="$unison_flags_joined" \
+TEMPLATE_LOG_FILE="$log_file" \
+TEMPLATE_IGNORE_FILES="$ignore_files_joined" \
+TEMPLATE_IGNORE_REGEXS="$ignore_regexs_joined" \
+TEMPLATE_LOCAL_PATH="$local_path" \
+TEMPLATE_CLOUD_PATH="$cloud_path" \
+perl -pe '
+	s/\{\{INSTALLED_USER\}\}/$ENV{TEMPLATE_USER}/g;
+	s/\{\{UNISON_PATH\}\}/$ENV{TEMPLATE_UNISON_PATH}/g;
+	s/\{\{UNISON_FLAGS\}\}/$ENV{TEMPLATE_UNISON_FLAGS}/g;
+	s/\{\{LOG_FILE\}\}/$ENV{TEMPLATE_LOG_FILE}/g;
+	s/\{\{IGNORE_FILES\}\}/$ENV{TEMPLATE_IGNORE_FILES}/g;
+	s/\{\{IGNORE_REGEXS\}\}/$ENV{TEMPLATE_IGNORE_REGEXS}/g;
+	s/\{\{LOCAL_PATH\}\}/$ENV{TEMPLATE_LOCAL_PATH}/g;
+	s/\{\{CLOUD_PATH\}\}/$ENV{TEMPLATE_CLOUD_PATH}/g;
+' script.template >"$script_path"
 
 echo "Creating $sync_once_path"
-sed "s|{{INSTALLED_USER}}|${USER}|;
-     s|{{UNISON_PATH}}|${unison_path}|;
-     s|{{UNISON_FLAGS}}|${unison_flags_joined}|;
-     s|{{LOG_FILE}}|${log_file}|;
-     s|{{IGNORE_FILES}}|${ignore_files_joined}|;
-     s#{{IGNORE_REGEXS}}#${ignore_regexs_joined}#;
-     s|{{LOCAL_PATH}}|${local_path}|;
-     s|{{CLOUD_PATH}}|${cloud_path}|;" sync-once.template >"$sync_once_path"
+# Use perl with environment variables to avoid quoting issues
+TEMPLATE_USER="$USER" \
+TEMPLATE_UNISON_PATH="$unison_path" \
+TEMPLATE_UNISON_FLAGS="$unison_flags_joined" \
+TEMPLATE_LOG_FILE="$log_file" \
+TEMPLATE_IGNORE_FILES="$ignore_files_joined" \
+TEMPLATE_IGNORE_REGEXS="$ignore_regexs_joined" \
+TEMPLATE_LOCAL_PATH="$local_path" \
+TEMPLATE_CLOUD_PATH="$cloud_path" \
+perl -pe '
+	s/\{\{INSTALLED_USER\}\}/$ENV{TEMPLATE_USER}/g;
+	s/\{\{UNISON_PATH\}\}/$ENV{TEMPLATE_UNISON_PATH}/g;
+	s/\{\{UNISON_FLAGS\}\}/$ENV{TEMPLATE_UNISON_FLAGS}/g;
+	s/\{\{LOG_FILE\}\}/$ENV{TEMPLATE_LOG_FILE}/g;
+	s/\{\{IGNORE_FILES\}\}/$ENV{TEMPLATE_IGNORE_FILES}/g;
+	s/\{\{IGNORE_REGEXS\}\}/$ENV{TEMPLATE_IGNORE_REGEXS}/g;
+	s/\{\{LOCAL_PATH\}\}/$ENV{TEMPLATE_LOCAL_PATH}/g;
+	s/\{\{CLOUD_PATH\}\}/$ENV{TEMPLATE_CLOUD_PATH}/g;
+' sync-once.template >"$sync_once_path"
 
 chmod +x "$script_path" "$sync_once_path"
 
