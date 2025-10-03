@@ -93,8 +93,11 @@ ignore_regexs=(
 	".*/\\.git(/modules/[^/]+)?/(COMMIT_EDITMSG|MERGE_MSG|SQUASH_MSG)$"
 
 	# transient operation dirs
-	".*/\\.git(/modules/[^/]+)?/rebase-.*"
-	".*/\\.git(/modules/[^/]+)?/merge-.*"
+	".*/\\.git(/modules/[^/]+)?/rebase-.*(/.*)?\$"
+	".*/\\.git(/modules/[^/]+)?/merge-.*(/.*)?\$"
+
+	# gc and config locks
+	".*/\\.git(/modules/[^/]+)?/(gc\\.pid|config\\.lock)\$"
 
 	# Dropbox-unfriendly only-inside-.git safeguards
 	".*/\\.git/.*/[^/]*[ ]$"
