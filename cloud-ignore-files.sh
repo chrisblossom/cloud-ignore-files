@@ -73,17 +73,33 @@ ignore_files=(
 # NOTE: Unison's Regex uses POSIX ERE and is anchored to the whole path (must match
 # the entire path). Hex escapes like \x00 and POSIX character classes are NOT supported.
 ignore_regexs=(
-	# Git temp files
-	".*/\\.git/.*\\.lock$"
-	".*/\\.git/objects/pack/(tmp_|\\.tmp-).*"
-	".*/\\.git/objects/pack/pack-.*\\.(idx|pack)\\.tmp"
+	# Locks anywhere under .git (includes index.lock, packed-refs.lock, etc.)
+	".*/\\.git(/modules/[^/]+)?/.*\\.lock$"
 
-	# Dropbox/Windows-invalid characters (inside .git only)
-	".*/\\.git/.*[<>:\"\\\\|?*].*"
+	# objects/pack temp + auxiliaries
+	".*/\\.git(/modules/[^/]+)?/objects/pack/(tmp_|\\.tmp-).*"
+	".*/\\.git(/modules/[^/]+)?/objects/pack/pack-.*\\.(idx|pack)\\.tmp$"
+	".*/\\.git(/modules/[^/]+)?/objects/pack/pack-.*\\.rev$"
+	".*/\\.git(/modules/[^/]+)?/objects/pack/pack-.*\\.bitmap$"
 
-	# Any component under .git that ends with a space or a dot
-	".*/\\.git/.*[ \\.]$"                      # filename itself ends with space/dot
-	".*/\\.git/(.*/)?[^/]*[ \\.]/.*"           # an intermediate directory ends with space/dot	
+	# packed-refs temps
+	".*/\\.git(/modules/[^/]+)?/packed-refs\\.(lock|tmp)$"
+
+	# reflogs (regenerated)
+	".*/\\.git(/modules/[^/]+)?/logs/.*"
+
+	# transient heads/messages (anchor to exact filenames)
+	".*/\\.git(/modules/[^/]+)?/(FETCH_HEAD|ORIG_HEAD|MERGE_HEAD|REBASE_HEAD|REVERT_HEAD|CHERRY_PICK_HEAD)$"
+	".*/\\.git(/modules/[^/]+)?/(COMMIT_EDITMSG|MERGE_MSG|SQUASH_MSG)$"
+
+	# transient operation dirs
+	".*/\\.git(/modules/[^/]+)?/rebase-.*"
+	".*/\\.git(/modules/[^/]+)?/merge-.*"
+
+	# Dropbox-unfriendly only-inside-.git safeguards
+	".*/\\.git/.*/[^/]*[ ]$"
+	".*/\\.git/.*/[^/]*\\.$"
+	".*/\\.git/.*/[^/]*[<>:\\\"\\\\|?*].*"
 )
 
 # Unison flags (one per line for clarity and maintainability)
