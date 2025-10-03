@@ -21,69 +21,69 @@ cloud_path="${HOME}/Dropbox/github-mirror"
 # Example: adding a line "*.log" will ignore any files ending with `*.log`.
 # For more details see: http://www.cis.upenn.edu/~bcpierce/unison/download/releases/stable/unison-manual.html#ignore
 ignore_files=(
-  # General
-  "*.log"
-  "build"
-  "dist"
-  "tmp"
-  "temp"
-  "var"
-  ".cache"
-  "cache"
-  "vendor"
-  "*.tmp.*"
+	# General
+	"*.log"
+	"build"
+	"dist"
+	"tmp"
+	"temp"
+	"var"
+	".cache"
+	"cache"
+	"vendor"
+	"*.tmp.*"
 
-  # OSX
-  ".DS_Store"
-  ".Spotlight-V100"
-  ".DocumentRevisions-V100"
-  ".TemporaryItems"
-  ".Trashes"
-  ".fseventsd"
-  
-  # IDE
-  ".vscode"
-  ".idea"
-  ".cursorrules"
+	# OSX
+	".DS_Store"
+	".Spotlight-V100"
+	".DocumentRevisions-V100"
+	".TemporaryItems"
+	".Trashes"
+	".fseventsd"
 
-  # Rust
-  "target"
+	# IDE
+	".vscode"
+	".idea"
+	".cursorrules"
 
-  # Node / JavaScript
-  "node_modules"
-  "bower_components"
-  ".nuxt"
-  ".nuxt_webpack"
-  ".next"
+	# Rust
+	"target"
 
-  # Python
-  "__pycache__"
-  "venv*"
-  ".venv*"
-  
-  # Solana
-  ".program_id"
-  "test-ledger"
+	# Node / JavaScript
+	"node_modules"
+	"bower_components"
+	".nuxt"
+	".nuxt_webpack"
+	".next"
+
+	# Python
+	"__pycache__"
+	"venv*"
+	".venv*"
+
+	# Solana
+	".program_id"
+	"test-ledger"
 )
 
 # Unison flags (one per line for clarity and maintainability)
 unison_flags=(
-	  # Core settings
-    "-batch"              # Non-interactive mode
-    "-times"              # Preserve modification times
-    "-perms=0o111"        # Only sync executable bit
-    "-links=true"         # Copy symbolic links
+	# Core settings
+	"-batch"       # Non-interactive mode
+	"-times"       # Preserve modification times
+	"-perms=0o111" # Only sync executable bit
+	"-links=true"  # Copy symbolic links
 
-    # Safety CRITICAL - DISABLED: backup feature causes excessive disk writes DO NOT RE-ENABLE
+	# Safety CRITICAL - DISABLED: backup feature causes excessive disk writes DO NOT RE-ENABLE
 
-    # Conflict resolution
-    "-copyonconflict"     # Keep both versions on conflict
-    "-prefer=newer"       # Prefer newer file on conflict
+	# Conflict resolution
+	"-copyonconflict" # Keep both versions on conflict
+	"-prefer=newer"   # Prefer newer file on conflict
 
-    # Batch mode helpers  
-    "-ignorecase=false"   # Case-sensitive (for git)
-    "-confirmbigdel=false" # No prompts for deletions
-	
+	# Batch mode helpers
+	"-ignorecase=false"    # Case-sensitive (for git)
+	"-confirmbigdel=false" # No prompts for deletions
+
 	"-rsrc=false"
 )
 
@@ -92,7 +92,10 @@ unison_flags=(
 ##########################################################################
 
 # Join ignore files into a comma-separated string for Unison's Name {a,b,c} syntax
-ignore_files_joined="$(IFS=,; printf '%s' "${ignore_files[*]}")"
+ignore_files_joined="$(
+	IFS=,
+	printf '%s' "${ignore_files[*]}"
+)"
 
 # Join unison flags into a space-separated string for command line
 unison_flags_joined="${unison_flags[*]}"
@@ -109,9 +112,9 @@ brew_exec_dir="$(dirname "$(command -v brew)")"
 # https://github.com/bcpierce00/unison/pull/447
 arch=$(uname -m)
 if [[ "$arch" == "arm64" ]]; then
-    unison_binary="unison-silicon"
+	unison_binary="unison-silicon"
 elif [[ "$arch" == "x86_64" ]]; then
-    unison_binary="unison-intel"
+	unison_binary="unison-intel"
 fi
 
 script_path="${base_path}/bin/unison-cloud-sync-ignore"
@@ -140,68 +143,68 @@ custom_ver=$("./$unison_binary" -version 2>/dev/null | grep -oE '[0-9]+\.[0-9]+(
 brew_ver=$(brew info unison 2>/dev/null | grep -E "^==> unison:" | awk '{print $4}')
 
 if [[ -n "$custom_ver" ]]; then
-  echo "custom_unison_version: $custom_ver"
+	echo "custom_unison_version: $custom_ver"
 fi
 
 if [[ -n "$brew_ver" ]]; then
-  echo "homebrew_unison_version: $brew_ver"
+	echo "homebrew_unison_version: $brew_ver"
 fi
 
 if [[ -n "$custom_ver" && -n "$brew_ver" && "$custom_ver" != "$brew_ver" ]]; then
-  echo ""
-  echo "***************************************************"
-  echo "WARNING: Custom unison version ($custom_ver) differs from Homebrew version ($brew_ver)"
-  echo "Consider updating your custom binaries if sync issues occur."
-  echo "***************************************************"
-  echo ""
+	echo ""
+	echo "***************************************************"
+	echo "WARNING: Custom unison version ($custom_ver) differs from Homebrew version ($brew_ver)"
+	echo "Consider updating your custom binaries if sync issues occur."
+	echo "***************************************************"
+	echo ""
 fi
 
 echo ""
 
 # Check if script is called with correct arguments.
 if [[ ("$1" != "--install" && "$1" != "--update" && "$1" != "--uninstall") || -n "$2" ]] || [[ -z "$1" ]]; then
-  echo "Usage: $0 [--install] [--update] [--uninstall]"
-  exit 1
+	echo "Usage: $0 [--install] [--update] [--uninstall]"
+	exit 1
 fi
 
 # do not allow running as root
 if [[ $EUID -eq 0 ]]; then
-   echo "ERROR: $0 cannot be ran using sudo or as the root user. Manually remove files listed above and try again."
-   exit 1
+	echo "ERROR: $0 cannot be ran using sudo or as the root user. Manually remove files listed above and try again."
+	exit 1
 fi
 
 # If config already exists, unload it before updating it.
 if [ -f "$plist_path" ]; then
-  echo "Unloading $plist_path"
-  launchctl unload "$plist_path"
+	echo "Unloading $plist_path"
+	launchctl unload "$plist_path"
 fi
 
 if [[ "$1" == "--uninstall" ]]; then
-  echo "Removing $script_path"
-  rm -f "$script_path"
-  echo "Removing $sync_once_path (from PATH)"
-  rm -f "$sync_once_path"
-  echo "Removing $plist_path"
-  rm -f "$plist_path"
+	echo "Removing $script_path"
+	rm -f "$script_path"
+	echo "Removing $sync_once_path (from PATH)"
+	rm -f "$sync_once_path"
+	echo "Removing $plist_path"
+	rm -f "$plist_path"
 
-  echo "Removing $stdout_log"
-  rm -f "$stdout_log"
-  echo "Removing $stderr_log"
-  rm -f "$stderr_log"
+	echo "Removing $stdout_log"
+	rm -f "$stdout_log"
+	echo "Removing $stderr_log"
+	rm -f "$stderr_log"
 
-  echo "Removing $base_path/bin/ if the directory is empty"
-  rmdir "$base_path/bin" 2>/dev/null
-  echo "Removing $base_path/ if the directory is empty"
-  rmdir "$base_path" 2>/dev/null
+	echo "Removing $base_path/bin/ if the directory is empty"
+	rmdir "$base_path/bin" 2>/dev/null
+	echo "Removing $base_path/ if the directory is empty"
+	rmdir "$base_path" 2>/dev/null
 
-  echo ""
-  echo "Sync script successfully removed. If you have any suggestions for improvement, please submit an issue on github."
-  exit
+	echo ""
+	echo "Sync script successfully removed. If you have any suggestions for improvement, please submit an issue on github."
+	exit
 fi
 
 if [[ -z "$HOMEBREW_PREFIX" ]]; then
-  echo "Homebrew is not installed. Install it (https://brew.sh) and try this script again."
-  exit 1
+	echo "Homebrew is not installed. Install it (https://brew.sh) and try this script again."
+	exit 1
 fi
 
 echo "creating directory $base_path/bin/"
@@ -209,13 +212,13 @@ mkdir -p "$base_path/bin"
 
 # Copy custom unison binary
 if [[ -n "$unison_binary" ]]; then
-    cp "$unison_binary" "$unison_path"
+	cp "$unison_binary" "$unison_path"
 fi
 
 # Check for custom unison binary and fail if not found.
 if [[ ! -f "$unison_path" ]]; then
-  echo "Custom unison binary not found at $unison_path. Make sure $unison_binary was copied correctly."
-  exit 1
+	echo "Custom unison binary not found at $unison_path. Make sure $unison_binary was copied correctly."
+	exit 1
 fi
 
 # Create/clear log files and fix log file permissions.
@@ -230,7 +233,7 @@ sed "s|{{LOCAL_PATH}}|${local_path}|;
      s|{{SCRIPT_PATH}}|${script_path}|;
      s|{{LABEL}}|${label}|;
      s|{{LOG_FILE}}|${stdout_log}|;
-     s|{{ERR_FILE}}|${stderr_log}|" plist.template > "$plist_path"
+     s|{{ERR_FILE}}|${stderr_log}|" plist.template >"$plist_path"
 
 echo "Creating $script_path"
 sed "s|{{INSTALLED_USER}}|${USER}|;
@@ -239,7 +242,7 @@ sed "s|{{INSTALLED_USER}}|${USER}|;
      s|{{LOG_FILE}}|${log_file}|;
      s|{{IGNORE_FILES}}|${ignore_files_joined}|;
      s|{{LOCAL_PATH}}|${local_path}|;
-     s|{{CLOUD_PATH}}|${cloud_path}|;" script.template > "$script_path"
+     s|{{CLOUD_PATH}}|${cloud_path}|;" script.template >"$script_path"
 
 echo "Creating $sync_once_path"
 sed "s|{{INSTALLED_USER}}|${USER}|;
@@ -248,7 +251,7 @@ sed "s|{{INSTALLED_USER}}|${USER}|;
      s|{{LOG_FILE}}|${log_file}|;
      s|{{IGNORE_FILES}}|${ignore_files_joined}|;
      s|{{LOCAL_PATH}}|${local_path}|;
-     s|{{CLOUD_PATH}}|${cloud_path}|;" sync-once.template > "$sync_once_path"
+     s|{{CLOUD_PATH}}|${cloud_path}|;" sync-once.template >"$sync_once_path"
 
 chmod +x "$script_path" "$sync_once_path"
 
