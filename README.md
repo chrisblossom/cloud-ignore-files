@@ -36,9 +36,18 @@ Key variables in `cloud-ignore-files.sh`:
 
 - **`local_path`**: Local working projects directory, defaults to `${HOME}/github`
 - **`cloud_path`**: Cloud-synced mirror directory, defaults to `${HOME}/Dropbox/github-mirror`
-- **`ignore_files`** array: Files/patterns to exclude from sync like node_modules, target, .DS_Store
+- **`ignore_files`** array: Files/patterns to exclude from sync using Unison `Name` matching
+- **`ignore_regexs`** array: Full-path regex patterns excluded using Unison `Regex` matching
 
-The ignore patterns are joined into a comma-separated string for Unison's `Name {a,b,c}` syntax.
+`ignore_files` are joined into a comma-separated string for Unison's `Name {a,b,c}` syntax.
+
+`ignore_regexs` are passed as repeated Unison flags like `-ignore='Regex <pattern>'`.
+
+Example Git-related defaults included:
+
+- `ignore_regexs` includes patterns to ignore Git lock files and pack temp files:
+  - `.*/\\.git/.*\\.lock$`
+  - `.*/\\.git/objects/pack/(tmp_|\\.tmp-).*`
 
 ## Custom Unison Binaries
 
@@ -64,7 +73,7 @@ See: https://github.com/bcpierce00/unison/pull/447
 2. Bidirectional sync between local and cloud directories
 3. Prefers newer files on conflict
 4. Preserves file permissions and timestamps
-5. Ignores specified patterns like node_modules, build artifacts
+5. Ignores specified patterns via `Name` and `Regex` rules (e.g., `node_modules`, Git temp files)
 6. Creates temporary files with `.~` prefix to avoid cloud service conflicts
 
 ## Testing Changes

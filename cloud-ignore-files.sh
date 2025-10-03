@@ -63,6 +63,16 @@ ignore_files=(
 	# Solana
 	".program_id"
 	"test-ledger"
+	
+)
+
+# Regex-based ignore patterns for Unison (full-path regex). Each entry should be the
+# pattern only (without the leading "Regex "). They are passed to Unison as
+# repeated -ignore='Regex <pattern>' arguments.
+ignore_regexs=(
+	# Git temp files
+	".*/\\.git/.*\\.lock$"
+	".*/\\.git/objects/pack/(tmp_|\\.tmp-).*"
 )
 
 # Unison flags (one per line for clarity and maintainability)
@@ -94,6 +104,13 @@ unison_flags=(
 ignore_files_joined="$(
 	IFS=,
 	printf '%s' "${ignore_files[*]}"
+)"
+
+# Build space-separated list of -ignore='Regex <pattern>' args for Unison
+ignore_regexs_joined="$(
+	for pattern in "${ignore_regexs[@]}"; do
+		printf "%s " "-ignore=\"Regex ${pattern}\""
+	done
 )"
 
 # Join unison flags into a space-separated string for command line
@@ -129,6 +146,7 @@ echo "local_path: $local_path"
 echo "cloud_path: $cloud_path"
 echo "unison_binary: $unison_path (arch: $arch)"
 echo "ignore_files: ${ignore_files_joined}"
+echo "ignore_regexs: ${ignore_regexs_joined}"
 echo "unison_flags: ${unison_flags_joined}"
 echo "log_file: $log_file"
 echo "stdout_log: $stdout_log"
@@ -240,6 +258,7 @@ sed "s|{{INSTALLED_USER}}|${USER}|;
      s|{{UNISON_FLAGS}}|${unison_flags_joined}|;
      s|{{LOG_FILE}}|${log_file}|;
      s|{{IGNORE_FILES}}|${ignore_files_joined}|;
+     s#{{IGNORE_REGEXS}}#${ignore_regexs_joined}#;
      s|{{LOCAL_PATH}}|${local_path}|;
      s|{{CLOUD_PATH}}|${cloud_path}|;" script.template >"$script_path"
 
@@ -249,6 +268,7 @@ sed "s|{{INSTALLED_USER}}|${USER}|;
      s|{{UNISON_FLAGS}}|${unison_flags_joined}|;
      s|{{LOG_FILE}}|${log_file}|;
      s|{{IGNORE_FILES}}|${ignore_files_joined}|;
+     s#{{IGNORE_REGEXS}}#${ignore_regexs_joined}#;
      s|{{LOCAL_PATH}}|${local_path}|;
      s|{{CLOUD_PATH}}|${cloud_path}|;" sync-once.template >"$sync_once_path"
 

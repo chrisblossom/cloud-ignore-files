@@ -10,4 +10,4 @@ if [[ "$USER" != "$INSTALLED_USER" ]]; then
 fi
 
 # One-off sync using configured unison flags
-{{UNISON_PATH}} {{UNISON_FLAGS}} -logfile={{LOG_FILE}} -ignore="Name {{{IGNORE_FILES}}}" "{{LOCAL_PATH}}" "{{CLOUD_PATH}}"
+{{UNISON_PATH}} {{UNISON_FLAGS}} -logfile={{LOG_FILE}} {{IGNORE_REGEXS}} -ignore="Name {{{IGNORE_FILES}}}" "{{LOCAL_PATH}}" "{{CLOUD_PATH}}"
