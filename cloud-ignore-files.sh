@@ -44,7 +44,6 @@ ignore_files=(
 	# IDE
 	".vscode"
 	".idea"
-	".cursorrules"
 
 	# Rust
 	"target"
