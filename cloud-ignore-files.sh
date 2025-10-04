@@ -64,6 +64,8 @@ ignore_files=(
 	".program_id"
 	"test-ledger"
 	
+	# git related
+	"sourcetreeconfig"
 )
 
 # Regex-based ignore patterns for Unison (full-path regex). Each entry should be the
@@ -73,40 +75,44 @@ ignore_files=(
 # NOTE: Unison's Regex uses POSIX ERE and is anchored to the whole path (must match
 # the entire path). Hex escapes like \x00 and POSIX character classes are NOT supported.
 ignore_regexs=(
-	# Locks anywhere under .git (includes index.lock, packed-refs.lock, etc.)
-	".*/\\.git(/modules/[^/]+)?/.*\\.lock$"
+	# Locks anywhere under .git (incl. index.lock, packed-refs.lock, etc.)
+	'.*/\.git(/(modules|worktrees)/[^/]+)?/.*\.lock$'
 
-	# objects temp blobs
-	".*/\\.git(/modules/[^/]+)?/objects/[0-9a-f]{2}/tmp_.*$"
+	# gitstatus temp files (e.g., Sourcetree)
+	'.*/\.git(/(modules|worktrees)/[^/]+)?/\.gitstatus\..*'
 
-	# objects/pack temp + auxiliaries
-	".*/\\.git(/modules/[^/]+)?/objects/pack/(tmp_|\\.tmp-).*"
-	".*/\\.git(/modules/[^/]+)?/objects/pack/pack-.*\\.(idx|pack)\\.tmp$"
-	".*/\\.git(/modules/[^/]+)?/objects/pack/pack-.*\\.rev$"
-	".*/\\.git(/modules/[^/]+)?/objects/pack/pack-.*\\.bitmap$"
-	".*/\\.git(/modules/[^/]+)?/objects/pack/pack-.*\\.(mtimes|promisor)$"
+	# Reflogs (regenerated)
+	'.*/\.git(/(modules|worktrees)/[^/]+)?/logs/.*'
 
-	# packed-refs temps
-	".*/\\.git(/modules/[^/]+)?/packed-refs\\.(lock|tmp)$"
+	# Transient operation dirs
+	'.*/\.git(/(modules|worktrees)/[^/]+)?/rebase-.*(/.*)?$'
+	'.*/\.git(/(modules|worktrees)/[^/]+)?/merge-.*(/.*)?$'
 
-	# reflogs (regenerated)
-	".*/\\.git(/modules/[^/]+)?/logs/.*"
-
-	# transient heads/messages (anchor to exact filenames)
-	".*/\\.git(/modules/[^/]+)?/(FETCH_HEAD|ORIG_HEAD|MERGE_HEAD|REBASE_HEAD|REVERT_HEAD|CHERRY_PICK_HEAD)$"
-	".*/\\.git(/modules/[^/]+)?/(COMMIT_EDITMSG|MERGE_MSG|SQUASH_MSG)$"
-
-	# transient operation dirs
-	".*/\\.git(/modules/[^/]+)?/rebase-.*(/.*)?\$"
-	".*/\\.git(/modules/[^/]+)?/merge-.*(/.*)?\$"
+	# Transient heads/messages (exact filenames)
+	'.*/\.git(/(modules|worktrees)/[^/]+)?/(FETCH_HEAD|ORIG_HEAD|MERGE_HEAD|REBASE_HEAD|REVERT_HEAD|CHERRY_PICK_HEAD)$'
+	'.*/\.git(/(modules|worktrees)/[^/]+)?/(COMMIT_EDITMSG|MERGE_MSG|SQUASH_MSG)$'
 
 	# gc and config locks
-	".*/\\.git(/modules/[^/]+)?/(gc\\.pid|config\\.lock)\$"
+	'.*/\.git(/(modules|worktrees)/[^/]+)?/(gc\.pid|config\.lock)$'
+
+	# Per-worktree config (machine-specific)
+	'.*/\.git/worktrees/[^/]+/config\.worktree$'
+
+	# objects/pack temps + auxiliaries
+	'.*/\.git(/(modules|worktrees)/[^/]+)?/objects/pack/(tmp_|\.tmp-).*'
+	'.*/\.git(/(modules|worktrees)/[^/]+)?/objects/pack/pack-.*\.(idx|pack)\.tmp$'
+	'.*/\.git(/(modules|worktrees)/[^/]+)?/objects/pack/pack-.*\.(rev|bitmap|mtimes|promisor)$'
+
+	# objects loose tmp blobs
+	'.*/\.git(/(modules|worktrees)/[^/]+)?/objects/[0-9a-f]{2}/tmp_.*$'
+
+	# packed-refs temps
+	'.*/\.git(/(modules|worktrees)/[^/]+)?/packed-refs\.(lock|tmp)$'
 
 	# Dropbox-unfriendly only-inside-.git safeguards
-	".*/\\.git/.*/[^/]*[ ]$"
-	".*/\\.git/.*/[^/]*\\.$"
-	".*/\\.git/.*/[^/]*[<>:\\\"\\\\|?*].*"
+	'.*/\.git/.*/[^/]*[ ]$'
+	'.*/\.git/.*/[^/]*\.$'
+	'.*/\.git/.*/[^/]*[":*?<>|\\].*'
 )
 
 # Unison flags (one per line for clarity and maintainability)
