@@ -76,11 +76,15 @@ ignore_regexs=(
 	# Locks anywhere under .git (includes index.lock, packed-refs.lock, etc.)
 	".*/\\.git(/modules/[^/]+)?/.*\\.lock$"
 
+	# objects temp blobs
+	".*/\\.git(/modules/[^/]+)?/objects/[0-9a-f]{2}/tmp_.*$"
+
 	# objects/pack temp + auxiliaries
 	".*/\\.git(/modules/[^/]+)?/objects/pack/(tmp_|\\.tmp-).*"
 	".*/\\.git(/modules/[^/]+)?/objects/pack/pack-.*\\.(idx|pack)\\.tmp$"
 	".*/\\.git(/modules/[^/]+)?/objects/pack/pack-.*\\.rev$"
 	".*/\\.git(/modules/[^/]+)?/objects/pack/pack-.*\\.bitmap$"
+	".*/\\.git(/modules/[^/]+)?/objects/pack/pack-.*\\.(mtimes|promisor)$"
 
 	# packed-refs temps
 	".*/\\.git(/modules/[^/]+)?/packed-refs\\.(lock|tmp)$"
