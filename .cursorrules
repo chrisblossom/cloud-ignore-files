@@ -1,0 +1,15 @@
+rules:
+  - name: "LaunchAgent gating"
+    details:
+      - "Keep launchd job alive only when local_path exists using KeepAlive.PathState -> {{LOCAL_PATH}}"
+      - "Regenerate plist via ./cloud-ignore-files.sh --update after changing local_path"
+  - name: "Sync script safety"
+    details:
+      - "Exit(0) if local_path is missing or not writable to handle unmounts/races"
+      - "Log a single line to stdout (captured by launchd) when skipping"
+  - name: "Operational notes"
+    details:
+      - "Prefer absolute paths in config"
+      - "Run ./cloud-ignore-files.sh --update to apply template changes"
+      - "Do not run as root; script enforces non-root execution"
+

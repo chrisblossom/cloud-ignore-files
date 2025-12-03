@@ -12,6 +12,14 @@
     <true/>
     <key>LimitLoadToSessionType</key>
     <string>Aqua</string>
+    <key>KeepAlive</key>
+    <dict>
+      <key>PathState</key>
+      <dict>
+        <key>{{LOCAL_PATH}}</key>
+        <true/>
+      </dict>
+    </dict>
     <key>StandardOutPath</key>
     <string>{{LOG_FILE}}</string>
     <key>StandardErrorPath</key>

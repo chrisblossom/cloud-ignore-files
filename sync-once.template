@@ -9,5 +9,11 @@ if [[ "$USER" != "$INSTALLED_USER" ]]; then
     exit 1
 fi
 
+# Ensure the local_path exists and is writable; otherwise exit gracefully
+if [[ ! -d "{{LOCAL_PATH}}" || ! -w "{{LOCAL_PATH}}" ]]; then
+    echo "local_path not available or not writable: {{LOCAL_PATH}}"
+    exit 0
+fi
+
 # One-off sync using configured unison flags
 {{UNISON_PATH}} {{UNISON_FLAGS}} -logfile={{LOG_FILE}} {{IGNORE_REGEXS}} -ignore="Name {{{IGNORE_FILES}}}" "{{LOCAL_PATH}}" "{{CLOUD_PATH}}"
